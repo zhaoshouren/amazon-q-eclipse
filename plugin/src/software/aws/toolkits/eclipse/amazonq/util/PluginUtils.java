@@ -89,5 +89,12 @@ public final class PluginUtils {
             throw new AmazonQPluginException("Detected unsupported architecture: " + osArch);
         }
     }
-
+    
+    public static void openWebpage(String url) {
+        try {
+            PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
+        } catch (Exception ex) {
+            PluginLogger.warn("Error while trying to open an external web page:", ex);
+        }
+    }
 }

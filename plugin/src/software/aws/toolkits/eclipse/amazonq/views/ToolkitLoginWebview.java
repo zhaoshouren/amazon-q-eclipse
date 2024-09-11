@@ -37,6 +37,7 @@ import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
 public class ToolkitLoginWebview extends ViewPart implements ISelectionListener {
 
     public static final String ID = "software.aws.toolkits.eclipse.amazonq.views.ToolkitLoginWebview";
+    private static final String shareFeedbackMenuItemText = "Share Feedback";
 
     @Inject
     private Shell shell;
@@ -93,6 +94,7 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
 
     private void fillLocalPullDown(final IMenuManager manager) {
         manager.add(changeThemeAction);
+        manager.add(new DialogContributionItem(new FeedbackDialog(shell), shareFeedbackMenuItemText, PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_LCL_LINKTO_HELP)));
         manager.add(signoutAction);
     }
 
