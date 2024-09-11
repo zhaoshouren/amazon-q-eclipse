@@ -1,0 +1,5 @@
+**/target/
+packageInfo
+**/node_modules/
+**/.gradle/
+**/.metadata/

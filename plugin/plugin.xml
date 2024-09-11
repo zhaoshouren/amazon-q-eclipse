@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+    <extension
+        point="org.eclipse.ui.views">
+        <category
+            name="Amazon Q"
+            id="amazonq">
+        </category>
+        <view
+            id="software.aws.toolkits.eclipse.amazonq.views.ToolkitLoginWebview"
+            name="Amazon Q Login"
+            icon="icons/AmazonQ.png"
+            class="software.aws.toolkits.eclipse.amazonq.views.ToolkitLoginWebview"
+            category="amazonq"
+            inject="true">
+        </view>
+        <view
+            id="software.aws.toolkits.eclipse.amazonq.views.AmazonQChatWebview"
+            name="Amazon Q Chat"
+            icon="icons/AmazonQ.png"
+            class="software.aws.toolkits.eclipse.amazonq.views.AmazonQChatWebview"
+            category="amazonq"
+            inject="true">
+        </view>
+    </extension>
+
+    <extension
+        point="org.eclipse.ui.perspectiveExtensions">
+        <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+            <view
+                id="software.aws.toolkits.eclipse.amazonq.views.ToolkitLoginWebview"
+                relative="org.eclipse.ui.views.ProblemView"
+                relationship="stack">
+            </view>
+        </perspectiveExtension>
+    </extension>
+    <extension
+        point="org.eclipse.lsp4e.languageServer">
+        <server
+            class="software.aws.toolkits.eclipse.amazonq.lsp.LspConnectionProvider"
+            clientImpl="software.aws.toolkits.eclipse.amazonq.lsp.AmazonQLspClientImpl"
+            id="software.aws.toolkits.eclipse.amazonq.qlanguageserver"
+            label="Amazon Q Language Server"
+            launcherBuilder="software.aws.toolkits.eclipse.amazonq.lsp.AmazonQLspServerBuilder"
+            singleton="true">
+        </server>
+        <server
+            class="software.aws.toolkits.eclipse.amazonq.lsp.AuthLspConnectionProvider"
+            clientImpl="software.aws.toolkits.eclipse.amazonq.lsp.AuthLspClientImpl"
+            id="software.aws.toolkits.eclipse.amazonq.authServer"
+            label="Auth LSP Server"
+            launcherBuilder="software.aws.toolkits.eclipse.amazonq.lsp.AuthLspServerBuilder"
+            singleton="true">
+        </server>
+        <contentTypeMapping
+            contentType="org.eclipse.jdt.core.javaSource"
+            id="software.aws.toolkits.eclipse.amazonq.qlanguageserver"
+            languageId="AMAZONQ_JAVA">
+        </contentTypeMapping>
+        <contentTypeMapping
+            contentType="org.eclipse.core.runtime.text"
+            id="software.aws.toolkits.eclipse.amazonq.qlanguageserver">
+        </contentTypeMapping>
+        <contentTypeMapping
+            contentType="org.eclipse.core.runtime.text"
+            id="software.aws.toolkits.eclipse.amazonq.authServer">
+        </contentTypeMapping>
+    </extension>
+    <extension
+        point="org.eclipse.core.filebuffers.documentSetup">
+        <participant
+            class="org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant"
+            contentTypeId="org.eclipse.jdt.core.javaSource">
+        </participant>
+   </extension>
+
+    <extension point="org.eclipse.ui.commands">
+        <category
+            id="software.aws.toolkits.eclipse.amazonq.commands.category"
+            name="Amazon Q">
+        </category>
+        <command
+            categoryId="software.aws.toolkits.eclipse.amazonq.commands.category"
+            name="Trigger Suggestions"
+            id="software.aws.toolkits.eclipse.amazonq.commands.triggerSuggestions">
+        </command>
+        <command
+            categoryId="software.aws.toolkits.eclipse.amazonq.commands.category"
+            name="Accept Suggestions"
+            id="software.aws.toolkits.eclipse.amazonq.commands.acceptSuggestions">
+        </command>
+        <command
+            categoryId="software.aws.toolkits.eclipse.amazonq.commands.category"
+            name="Reject Suggestions"
+            id="software.aws.toolkits.eclipse.amazonq.commands.rejectSuggestions">
+        </command>
+    </extension>
+
+    <extension point="org.eclipse.ui.handlers">
+        <handler
+            class="software.aws.toolkits.eclipse.amazonq.handlers.QTriggerSuggestionsHandler"
+            commandId="software.aws.toolkits.eclipse.amazonq.commands.triggerSuggestions">
+        </handler>
+        <handler
+            class="software.aws.toolkits.eclipse.amazonq.handlers.QAcceptSuggestionsHandler"
+            commandId="software.aws.toolkits.eclipse.amazonq.commands.acceptSuggestions">
+        </handler>
+        <handler
+                class="software.aws.toolkits.eclipse.amazonq.handlers.QRejectSuggestionsHandler"
+                commandId="software.aws.toolkits.eclipse.amazonq.commands.rejectSuggestions">
+        </handler>
+    </extension>
+
+    <extension point="org.eclipse.ui.bindings">
+        <key
+            commandId="software.aws.toolkits.eclipse.amazonq.commands.triggerSuggestions"
+            contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M3+C">
+        </key>
+        <key
+            commandId="software.aws.toolkits.eclipse.amazonq.commands.acceptSuggestions"
+            contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="TAB">
+        </key>
+        <key
+            commandId="software.aws.toolkits.eclipse.amazonq.commands.rejectSuggestions"
+            contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="ESC">
+        </key>
+    </extension>
+
+    <extension point="org.eclipse.ui.startup">
+        <startup
+            class="software.aws.toolkits.eclipse.amazonq.lsp.LspStartupActivity">
+        </startup>
+    </extension>
+
+</plugin>

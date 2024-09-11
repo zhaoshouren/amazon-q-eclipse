@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/software.aws.toolkits.eclipse.amazonq.aws-plugin-q-feature_1.0.0.qualifier.jar" id="aws-plugin-q-feature" version="1.0.0.qualifier">
+      <category name="software.aws.toolkits.eclipse"/>
+   </feature>
+   <category-def name="software.aws.toolkits.eclipse" label="software.aws.toolkits.eclipse">
+      <description>
+         The category containing the example feature.
+      </description>
+   </category-def>
+</site>

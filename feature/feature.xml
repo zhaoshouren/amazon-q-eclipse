@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="aws-plugin-q-feature"
+      label="AWS Q Plugin"
+      version="1.0.0.qualifier">
+
+   <description>
+      This is an example feature for the example plug-in implementation.
+   </description>
+
+   <license url="">
+    To be disclosed
+   </license>
+
+   <plugin
+         id="aws-plugin-q"
+
+         download-size="0"
+         install-size="0"
+         version="1.0.0.qualifier"
+
+         unpack="false"/>
+</feature>

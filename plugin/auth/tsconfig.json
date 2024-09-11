@@ -1,0 +1,8 @@
+{
+    "files": [],
+    "references": [
+        { "path": "./packages/common" },
+        { "path": "./packages/extension" },
+        { "path": "./packages/server" }
+    ]
+}
