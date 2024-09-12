@@ -7,8 +7,12 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
+
+import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.InlineCompletionContext;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.InlineCompletionParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.InlineCompletionTriggerKind;
@@ -22,11 +26,12 @@ public final class InlineCompletionUtils {
     public static InlineCompletionParams cwParamsFromContext(final ITextEditor editor, final ITextViewer viewer,
             final int invocationOffset) throws BadLocationException {
         var document = viewer.getDocument();
-        var openFilePath = ((IFileEditorInput) editor.getEditorInput()).getFile().getRawLocation();
+
+        var openFilePath = getOpenFilePath(editor.getEditorInput());
 
         var params = new InlineCompletionParams();
         var identifier = new TextDocumentIdentifier();
-        identifier.setUri("file://" + openFilePath.toOSString());
+        identifier.setUri("file://" + openFilePath);
         params.setTextDocument(identifier);
 
         var inlineCompletionContext = new InlineCompletionContext();
@@ -41,6 +46,16 @@ public final class InlineCompletionUtils {
         invocationPosition.setCharacter(lineOffset);
         params.setPosition(invocationPosition);
         return params;
+    }
+    
+    private static String getOpenFilePath(IEditorInput editorInput) {
+        if (editorInput instanceof FileStoreEditorInput fileStoreEditorInput) {
+            return fileStoreEditorInput.getURI().getPath();
+        } else if (editorInput instanceof IFileEditorInput fileEditorInput) {
+            return fileEditorInput.getFile().getRawLocation().toOSString();
+        } else {
+            throw new AmazonQPluginException("Unexpected editor input type: " + editorInput.getClass().getName());
+        }
     }
 
 }
