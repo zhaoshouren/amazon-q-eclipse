@@ -8,6 +8,7 @@ import java.net.URL;
 
 import jakarta.inject.Inject;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.preference.PreferenceDialog;
@@ -73,6 +74,7 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
 
         contributeToActionBars(getViewSite());
         getSite().getPage().addSelectionListener(this);
+        AuthUtils.addAuthStatusChangeListener(this::updateFeedbackContributionItemVisibility);
         AuthUtils.addAuthStatusChangeListener(this::updateSignoutActionVisibility);
         authStatusChangedListener = this::handleAuthStatusChange;
 
@@ -94,7 +96,7 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
 
     private void fillLocalPullDown(final IMenuManager manager) {
         manager.add(changeThemeAction);
-        manager.add(new DialogContributionItem(new FeedbackDialog(shell), shareFeedbackMenuItemText, PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_LCL_LINKTO_HELP)));
+        manager.add(feedbackDialogContributionItem);
         manager.add(signoutAction);
     }
 
@@ -106,10 +108,17 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
         changeThemeAction = new ChangeThemeAction();
         signoutAction = new SignoutAction();
         updateSignoutActionVisibility(isLoggedIn);
+        feedbackDialogContributionItem = new DialogContributionItem(
+                new FeedbackDialog(shell),
+                shareFeedbackMenuItemText,
+                PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_LCL_LINKTO_HELP)
+                );
+        updateFeedbackContributionItemVisibility(isLoggedIn);
     }
 
     private Action changeThemeAction;
     private Action signoutAction;
+    private ContributionItem feedbackDialogContributionItem;
 
     private class ChangeThemeAction extends Action {
         ChangeThemeAction() {
@@ -142,6 +151,7 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
     private void handleAuthStatusChange(final boolean isLoggedIn) {
         Display.getDefault().asyncExec(() -> {
             updateSignoutActionVisibility(isLoggedIn);
+            updateFeedbackContributionItemVisibility(isLoggedIn);
             if (!isLoggedIn) {
                 browser.setText(getContent());
             } else {
@@ -152,6 +162,14 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
 
     private void updateSignoutActionVisibility(final boolean isLoggedIn) {
         signoutAction.setEnabled(isLoggedIn);
+    }
+    
+    private void updateFeedbackContributionItemVisibility(final boolean isLoggedIn) {
+        feedbackDialogContributionItem.setVisible(isLoggedIn);
+        Display.getDefault().asyncExec(() -> {
+            getViewSite().getActionBars().getMenuManager().markDirty();
+            getViewSite().getActionBars().getMenuManager().update(true);
+        });
     }
 
     @Override
