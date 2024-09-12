@@ -6,9 +6,9 @@ package software.aws.toolkits.eclipse.amazonq.util;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.CaretEvent;
 import org.eclipse.swt.custom.CaretListener;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.widgets.Display;
@@ -17,12 +17,12 @@ import software.aws.toolkits.eclipse.amazonq.lsp.model.InlineCompletionItem;
 import software.aws.toolkits.eclipse.amazonq.providers.LspProvider;
 
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static software.aws.toolkits.eclipse.amazonq.util.QConstants.Q_INLINE_HINT_TEXT_STYLE;
 import static software.aws.toolkits.eclipse.amazonq.util.QEclipseEditorUtils.getActiveTextViewer;
-import static software.aws.toolkits.eclipse.amazonq.util.QEclipseEditorUtils.isLastLine;
 
 public final class QInvocationSession extends QResource {
 
@@ -30,6 +30,7 @@ public final class QInvocationSession extends QResource {
     private static QInvocationSession instance;
 
     private QInvocationSessionState state = QInvocationSessionState.INACTIVE;
+    private CaretMovementReason caretMovementReason = CaretMovementReason.UNEXAMINED;
 
     private QSuggestionsContext suggestionsContext = null;
 
@@ -38,7 +39,13 @@ public final class QInvocationSession extends QResource {
     private Font inlineTextFont = null;
     private int invocationOffset = -1;
     private long invocationTimeInMs = -1L;
-    private QInlineRendererListener listener = null;
+    private QInlineRendererListener paintListener = null;
+    private CaretListener caretListener = null;
+    private VerifyKeyListener verifyKeyListener = null;
+    private int leadingWhitespaceSkipped = 0;
+    private Stack<Character> closingBrackets = new Stack<>();
+    private boolean isLastKeyNewLine = false;
+    private int[] headOffsetAtLine = new int[500];
 
     // Private constructor to prevent instantiation
     private QInvocationSession() {
@@ -53,7 +60,8 @@ public final class QInvocationSession extends QResource {
         return instance;
     }
 
-    // TODO: separation of concerns between session attributes, session management, and remote invocation logic
+    // TODO: separation of concerns between session attributes, session management,
+    // and remote invocation logic
     // Method to start the session
     public synchronized boolean start(final ITextEditor editor) {
         if (!isActive()) {
@@ -79,19 +87,16 @@ public final class QInvocationSession extends QResource {
             System.out.println("Current listeners for " + widget);
             listeners.forEach(System.out::println);
             if (listeners.isEmpty()) {
-                listener = new QInlineRendererListener();
-                widget.addPaintListener(listener);
+                paintListener = new QInlineRendererListener();
+                widget.addPaintListener(paintListener);
             }
-            widget.addCaretListener(new CaretListener() {
-                @Override
-                public void caretMoved(final CaretEvent event) {
-                    if (QInvocationSession.getInstance().isPreviewingSuggestions()) {
-                        QInvocationSession.getInstance().transitionToDecisionMade();
-                        QInvocationSession.getInstance().getViewer().getTextWidget().redraw();
-                        //QInvocationSession.getInstance().end();
-                    }
-                }
-            });
+
+            verifyKeyListener = new QInlineVerifyKeyListener(widget);
+            widget.addVerifyKeyListener(verifyKeyListener);
+
+            caretListener = new QInlineCaretListener(widget);
+            widget.addCaretListener(caretListener);
+
             return true;
         } else {
             System.out.println("Session is already active.");
@@ -103,11 +108,7 @@ public final class QInvocationSession extends QResource {
         var session = QInvocationSession.getInstance();
 
         try {
-            var params = InlineCompletionUtils.cwParamsFromContext(
-                    session.getEditor(),
-                    session.getViewer(),
-                    session.getInvocationOffset()
-            );
+            var params = InlineCompletionUtils.cwParamsFromContext(session.getEditor(), session.getViewer(), session.getInvocationOffset());
 
             ThreadingUtils.executeAsyncTask(() -> {
                 try {
@@ -119,9 +120,7 @@ public final class QInvocationSession extends QResource {
                     }
 
                     List<String> newSuggestions = LspProvider.getAmazonQServer().get().inlineCompletionWithReferences(params)
-                            .thenApply(result -> result.getItems().stream()
-                                    .map(InlineCompletionItem::getInsertText)
-                                    .collect(Collectors.toList()))
+                            .thenApply(result -> result.getItems().stream().map(InlineCompletionItem::getInsertText).collect(Collectors.toList()))
                             .get();
 
                     Display.getDefault().asyncExec(() -> {
@@ -130,28 +129,28 @@ public final class QInvocationSession extends QResource {
                             return;
                         }
 
-                        suggestionsContext.getDetails().addAll(
-                                newSuggestions.stream()
-                                        .map(QSuggestionContext::new)
-                                        .collect(Collectors.toList())
-                        );
+                        suggestionsContext.getDetails().addAll(newSuggestions.stream().map(QSuggestionContext::new).collect(Collectors.toList()));
 
                         suggestionsContext.setCurrentIndex(0);
 
                         // TODO: remove print
                         // Update the UI with the results
                         System.out.println("Suggestions: " + newSuggestions);
+                        System.out.println("Total suggestion number: " + newSuggestions.size());
 
                         transitionToPreviewingState();
                         session.getViewer().getTextWidget().redraw();
                     });
                 } catch (InterruptedException e) {
+                    System.out.println("Query InterruptedException: " + e.getMessage());
                     PluginLogger.error("Inline completion interrupted", e);
                 } catch (ExecutionException e) {
+                    System.out.println("Query ExecutionException: " + e.getMessage());
                     PluginLogger.error("Error executing inline completion", e);
                 }
             });
         } catch (BadLocationException e) {
+            System.out.println("BadLocationException: " + e.getMessage());
             PluginLogger.error("Unable to compute inline completion request from document", e);
         }
     }
@@ -166,6 +165,14 @@ public final class QInvocationSession extends QResource {
 
     // Method to end the session
     public synchronized void end() {
+        // Get the current thread's stack trace
+        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+
+        // Log the stack trace
+        System.out.println("Stack trace:");
+        for (StackTraceElement element : stackTraceElements) {
+            System.out.println(element);
+        }
         if (isActive()) {
             state = QInvocationSessionState.INACTIVE;
             dispose();
@@ -210,11 +217,32 @@ public final class QInvocationSession extends QResource {
         state = QInvocationSessionState.DECISION_MADE;
 
         // Clear previous next line indent in certain cases (always for now?)
-        var widget = viewer.getTextWidget();
-        var caretLine = widget.getLineAtOffset(widget.getCaretOffset());
-        if (!isLastLine(widget, caretLine + 1)) {
-            widget.setLineVerticalIndent(caretLine + 1, 0);
+        // From Felix: Not really sure when or where this is needed, disabling for now.
+        // This is throwing under certain circumstances with IllegalArgument
+        // var widget = viewer.getTextWidget();
+        // var caretLine = widget.getLineAtOffset(widget.getCaretOffset());
+        // if (!isLastLine(widget, caretLine + 1)) {
+        // widget.setLineVerticalIndent(caretLine + 1, 0);
+        // }
+    }
+
+    public void setCaretMovementReason(final CaretMovementReason reason) {
+        this.caretMovementReason = reason;
+    }
+
+    public void setLeadingWhitespaceSkipped(final int numSkipped) {
+        this.leadingWhitespaceSkipped = numSkipped;
+    }
+
+    public void setIsLastKeyNewLine(final boolean isLastKeyNewLine) {
+        this.isLastKeyNewLine = isLastKeyNewLine;
+    }
+
+    public void setHeadOffsetAtLine(final int lineNum, final int offSet) throws IllegalArgumentException {
+        if (lineNum >= headOffsetAtLine.length || lineNum < 0) {
+            throw new IllegalArgumentException("Problematic index given");
         }
+        headOffsetAtLine[lineNum] = offSet;
     }
 
     public Font getInlineTextFont() {
@@ -231,6 +259,33 @@ public final class QInvocationSession extends QResource {
 
     public ITextViewer getViewer() {
         return viewer;
+    }
+
+    public QInvocationSessionState getState() {
+        return state;
+    }
+
+    public CaretMovementReason getCaretMovementReason() {
+        return caretMovementReason;
+    }
+
+    public Stack<Character> getClosingBrackets() {
+        return closingBrackets;
+    }
+
+    public int getLeadingWhitespaceSkipped() {
+        return leadingWhitespaceSkipped;
+    }
+
+    public boolean isLastKeyNewLine() {
+        return isLastKeyNewLine;
+    }
+
+    public int getHeadOffsetAtLine(final int lineNum) throws IllegalArgumentException {
+        if (lineNum >= headOffsetAtLine.length || lineNum < 0) {
+            throw new IllegalArgumentException("Problematic index given");
+        }
+        return headOffsetAtLine[lineNum];
     }
 
     public String getCurrentSuggestion() {
@@ -255,14 +310,26 @@ public final class QInvocationSession extends QResource {
     // Additional methods for the session can be added here
     @Override
     public void dispose() {
+        var widget = viewer.getTextWidget();
+
         suggestionsContext = null;
         inlineTextFont.dispose();
         inlineTextFont = null;
-        viewer.getTextWidget().removePaintListener(listener);
-        listener = null;
+        closingBrackets = null;
+        leadingWhitespaceSkipped = 0;
+        isLastKeyNewLine = false;
+        caretMovementReason = CaretMovementReason.UNEXAMINED;
+        QInvocationSession.getInstance().getViewer().getTextWidget().redraw();
+        widget.removePaintListener(paintListener);
+        widget.removeCaretListener(caretListener);
+        widget.removeVerifyKeyListener(verifyKeyListener);
+        paintListener = null;
+        caretListener = null;
+        verifyKeyListener = null;
         invocationOffset = -1;
         invocationTimeInMs = -1L;
         editor = null;
         viewer = null;
     }
 }
+

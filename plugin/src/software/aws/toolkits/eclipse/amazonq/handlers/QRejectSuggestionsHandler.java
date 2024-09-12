@@ -18,8 +18,8 @@ public class QRejectSuggestionsHandler extends AbstractHandler {
     @Override
     public final Object execute(final ExecutionEvent event) throws ExecutionException {
         QInvocationSession.getInstance().transitionToDecisionMade();
-        QInvocationSession.getInstance().getViewer().getTextWidget().redraw();
         QInvocationSession.getInstance().end();
         return null;
     }
 }
+

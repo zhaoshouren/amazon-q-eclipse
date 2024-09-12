@@ -3,17 +3,24 @@
 
 package software.aws.toolkits.eclipse.amazonq.util;
 
+//import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.graphics.Point;
+//import org.eclipse.swt.graphics.Point;
 
 import static software.aws.toolkits.eclipse.amazonq.util.QConstants.Q_INLINE_HINT_TEXT_COLOR;
-import static software.aws.toolkits.eclipse.amazonq.util.QEclipseEditorUtils.isLastLine;
+//import static software.aws.toolkits.eclipse.amazonq.util.QEclipseEditorUtils.isLastLine;
+
+import java.util.Arrays;
 
 public class QInlineRendererListener implements PaintListener {
+    private int currentLine = -1;
+    private int offsetAtCurrentLine = -1;
+
     @Override
     public final void paintControl(final PaintEvent e) {
-        if (!QInvocationSession.getInstance().isPreviewingSuggestions()) {
+        var qInvocationSessionInstance = QInvocationSession.getInstance();
+        if (!qInvocationSessionInstance.isPreviewingSuggestions()) {
             return;
         }
 
@@ -24,30 +31,57 @@ public class QInlineRendererListener implements PaintListener {
 
         var location = widget.getLocationAtOffset(widget.getCaretOffset());
         var suggestion = QInvocationSession.getInstance().getCurrentSuggestion();
-        var suggestionParts = suggestion.split("\\R", 2);
+        int invocationOffset = QInvocationSession.getInstance().getInvocationOffset();
+        var suggestionParts = suggestion.split("\\R");
+
+        int currentOffset = widget.getCaretOffset();
+        int lineOffset = widget.getLineAtOffset(currentOffset);
+        int originalLine = widget.getLineAtOffset(invocationOffset);
+        int currentLineInSuggestion = lineOffset - originalLine;
+        if (currentLine < lineOffset) {
+            // this accounts for a traversal "downwards" as user types
+            currentLine = lineOffset;
+            offsetAtCurrentLine = currentOffset;
+            qInvocationSessionInstance.setHeadOffsetAtLine(lineOffset, currentOffset);
+        } else if (currentLine > lineOffset) {
+            // this accounts for a traversal "upwards" as user backspaces
+            currentLine = lineOffset;
+            offsetAtCurrentLine = qInvocationSessionInstance.getHeadOffsetAtLine(lineOffset);
+        }
+
+        int renderHeadIndex = currentOffset - offsetAtCurrentLine;
+        String[] remainderArray = Arrays.copyOfRange(suggestionParts, currentLineInSuggestion + 1, suggestionParts.length);
+        String remainder = String.join("\n", remainderArray);
 
         // Draw first line inline
-        if (suggestionParts.length > 0) {
-            gc.drawText(suggestionParts[0], location.x, location.y, true);
+        String firstLine = renderHeadIndex >= 0
+                ? suggestionParts[currentLineInSuggestion].trim() : suggestionParts[currentLineInSuggestion];
+        int xLoc = renderHeadIndex >= 0 ? location.x : widget.getLeftMargin();
+        if (renderHeadIndex < firstLine.length()) {
+            gc.drawText(renderHeadIndex >= 0 ? firstLine.substring(renderHeadIndex) : firstLine, xLoc, location.y, true);
         }
 
         // Draw other lines inline
-        if (suggestionParts.length > 1) {
+        if (!remainder.isEmpty()) {
             // For last line case doesn't need to indent next line vertically
             var caretLine = widget.getLineAtOffset(widget.getCaretOffset());
-            if (!isLastLine(widget, caretLine + 1)) {
-                // when showing the suggestion need to add next line indent
-                Point textExtent = gc.stringExtent(" ");
-                int height = textExtent.y * suggestionParts[1].split("\\R").length;
-                widget.setLineVerticalIndent(caretLine + 1, height);
-            }
+            // Felix: Not really sure what this does and it is throwing under certain
+            // circumstance
+            // Will confirm with Andrew before adding this back in / modifying it.
+//            if (!isLastLine(widget, caretLine + 1)) {
+//                // when showing the suggestion need to add next line indent
+//                Point textExtent = gc.stringExtent(" ");
+//                int height = textExtent.y * suggestionParts[1].split("\\R").length;
+//                widget.setLineVerticalIndent(caretLine + 1, height);
+//            }
 
             int lineHt = widget.getLineHeight();
             int fontHt = gc.getFontMetrics().getHeight();
             int x = widget.getLeftMargin();
             int y = location.y + lineHt * 2 - fontHt;
-            gc.drawText(suggestionParts[1], x, y, true);
+            gc.drawText(remainder, x, y, true);
         }
     }
 
 }
+
