@@ -44,7 +44,7 @@ public class AmazonQChatWebview extends ViewPart implements ISelectionListener {
 
     public AmazonQChatWebview() {
         this.commandParser = new LoginViewCommandParser();
-        this.actionHandler = new LoginViewActionHandler();
+        this.actionHandler = new AmazonQChatViewActionHandler();
     }
 
     @Override
@@ -64,14 +64,15 @@ public class AmazonQChatWebview extends ViewPart implements ISelectionListener {
         contributeToActionBars(getViewSite());
         getSite().getPage().addSelectionListener(this);
 
-       new BrowserFunction(browser, "clientApi") {
+       new BrowserFunction(browser, "ideCommand") {
             @Override
             public Object function(final Object[] arguments) {
                 commandParser.parseCommand(arguments)
-                        .ifPresent(command -> actionHandler.handleCommand(command, browser));
+                        .ifPresent(parsedCommand -> actionHandler.handleCommand(parsedCommand, browser));
                 return null;
             }
         };
+        
     }
 
     private void contributeToActionBars(final IViewSite viewSite) {
@@ -168,7 +169,11 @@ public class AmazonQChatWebview extends ViewPart implements ISelectionListener {
         return String.format("<script type=\"text/javascript\" src=\"%s\" defer onload=\"init()\"></script>\n"
                 + "    <script type=\"text/javascript\">\n"
                 + "        const init = () => {\n"
-                + "            amazonQChat.createChat(clientApi());\n"
+                + "            amazonQChat.createChat({\n"
+                + "               postMessage: (message) => {\n"
+                + "                    ideCommand(JSON.stringify(message));\n"
+                + "               }\n"			
+                + "			});\n"
                 + "        }\n"
                 + "    </script>", jsEntrypoint);
     }
