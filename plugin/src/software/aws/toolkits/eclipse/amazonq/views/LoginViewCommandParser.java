@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import software.aws.toolkits.eclipse.amazonq.util.ObjectMapperFactory;
 import software.aws.toolkits.eclipse.amazonq.util.PluginLogger;
-import software.aws.toolkits.eclipse.amazonq.views.model.Command;
 import software.aws.toolkits.eclipse.amazonq.views.model.CommandRequest;
+import software.aws.toolkits.eclipse.amazonq.views.model.ParsedCommand;
 
 public class LoginViewCommandParser implements ViewCommandParser {
     private final ObjectMapper objectMapper;
@@ -21,12 +21,12 @@ public class LoginViewCommandParser implements ViewCommandParser {
     }
 
     @Override
-    public final Optional<Command> parseCommand(final Object[] arguments) {
+    public final Optional<ParsedCommand> parseCommand(final Object[] arguments) {
         if (arguments.length > 0 && arguments[0] instanceof String) {
             String jsonString = (String) arguments[0];
             try {
                 CommandRequest commandRequest = objectMapper.readValue(jsonString, CommandRequest.class);
-                return Optional.ofNullable(commandRequest.getCommand());
+                return commandRequest.getParsedCommand();
             } catch (JsonProcessingException e) {
                 PluginLogger.error("Error parsing webview command JSON: " + e.getMessage());
             }

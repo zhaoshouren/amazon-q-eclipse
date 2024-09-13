@@ -3,18 +3,19 @@
 
 package software.aws.toolkits.eclipse.amazonq.views;
 
+
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.widgets.Display;
 
 import software.aws.toolkits.eclipse.amazonq.util.AuthUtils;
 import software.aws.toolkits.eclipse.amazonq.util.PluginLogger;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
-import software.aws.toolkits.eclipse.amazonq.views.model.Command;
+import software.aws.toolkits.eclipse.amazonq.views.model.ParsedCommand;
 
 public class LoginViewActionHandler implements ViewActionHandler {
     @Override
-    public final void handleCommand(final Command command, final Browser browser) {
-        switch (command) {
+    public final void handleCommand(final ParsedCommand parsedCommand, final Browser browser) {
+        switch (parsedCommand.getCommand()) {
             case LOGIN_BUILDER_ID:
                 PluginLogger.info("loginBuilderId command received");
                 ThreadingUtils.executeAsyncTask(() -> {
@@ -30,7 +31,7 @@ public class LoginViewActionHandler implements ViewActionHandler {
                 PluginLogger.info("cancelLogin command received");
                 break;
             default:
-                System.out.println("Unknown command: " + command);
+                System.out.println("Unknown command: " + parsedCommand.getCommand());
                 break;
         }
     }

@@ -3,10 +3,19 @@
 
 package software.aws.toolkits.eclipse.amazonq.views.model;
 
+import java.util.Optional;
+
+import software.aws.toolkits.eclipse.amazonq.util.PluginLogger;
+
 public enum Command {
+	// QChat 
+	CHAT_READY("aws/chat/ready"),
+	CHAT_TAB_ADD("aws/chat/tabAdd"),
+	TELEMETRY_EVENT("telemetry/event"),
+	
+	// Auth
     LOGIN_BUILDER_ID("loginBuilderId"),
-    CANCEL_LOGIN("cancelLogin"),
-    UKNOWN("unknown");
+    CANCEL_LOGIN("cancelLogin");
 
     private final String commandString;
 
@@ -14,12 +23,14 @@ public enum Command {
         this.commandString = commandString;
     }
 
-    public static Command fromString(final String value) {
+    public static Optional<Command> fromString(final String value) {
         for (Command command : Command.values()) {
             if (command.commandString.equals(value)) {
-                return command;
+                return Optional.ofNullable(command);
             }
         }
-        return Command.UKNOWN;
+        
+        PluginLogger.info("Unregistered command parsed: " + value);
+        return Optional.empty();
     }
 }
