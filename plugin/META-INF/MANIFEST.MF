@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: aws-plugin-q
+Bundle-Name: amazon-q-eclipse
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Bundle-SymbolicName: aws-plugin-q;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: amazon-q-eclipse;singleton:=true
+Bundle-Version: 0.0.1.snapshot
 Automatic-Module-Name: aws.plugin.q
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.31.0",

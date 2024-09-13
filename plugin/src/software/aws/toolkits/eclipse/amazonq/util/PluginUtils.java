@@ -27,6 +27,9 @@ public final class PluginUtils {
 
     private static Image qIcon = null;
 
+    public static final String PLUGIN_NAME = FrameworkUtil.getBundle(PluginUtils.class).getSymbolicName();
+    public static final String PLUGIN_VERSION = FrameworkUtil.getBundle(PluginUtils.class).getVersion().toString();
+
     public static java.nio.file.Path getPluginDir(final String directoryName) {
         Bundle bundle = FrameworkUtil.getBundle(PluginUtils.class);
         File pluginDir = bundle.getDataFile(directoryName);
