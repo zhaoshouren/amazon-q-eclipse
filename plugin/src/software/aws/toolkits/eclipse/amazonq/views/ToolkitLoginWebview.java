@@ -38,7 +38,7 @@ import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
 public class ToolkitLoginWebview extends ViewPart implements ISelectionListener {
 
     public static final String ID = "software.aws.toolkits.eclipse.amazonq.views.ToolkitLoginWebview";
-    private static final String shareFeedbackMenuItemText = "Share Feedback";
+    private static final String SHARE_FEEDBACK_MENU_ITEM_TEXT = "Share Feedback";
 
     @Inject
     private Shell shell;
@@ -110,7 +110,7 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
         updateSignoutActionVisibility(isLoggedIn);
         feedbackDialogContributionItem = new DialogContributionItem(
                 new FeedbackDialog(shell),
-                shareFeedbackMenuItemText,
+                SHARE_FEEDBACK_MENU_ITEM_TEXT,
                 PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_LCL_LINKTO_HELP)
                 );
         updateFeedbackContributionItemVisibility(isLoggedIn);
@@ -163,7 +163,7 @@ public class ToolkitLoginWebview extends ViewPart implements ISelectionListener 
     private void updateSignoutActionVisibility(final boolean isLoggedIn) {
         signoutAction.setEnabled(isLoggedIn);
     }
-    
+
     private void updateFeedbackContributionItemVisibility(final boolean isLoggedIn) {
         feedbackDialogContributionItem.setVisible(isLoggedIn);
         Display.getDefault().asyncExec(() -> {

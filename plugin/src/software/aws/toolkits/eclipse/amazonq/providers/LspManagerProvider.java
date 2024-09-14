@@ -8,7 +8,7 @@ import software.aws.toolkits.eclipse.amazonq.lsp.manager.LspConstants;
 import software.aws.toolkits.eclipse.amazonq.lsp.manager.LspManager;
 import software.aws.toolkits.eclipse.amazonq.lsp.manager.fetcher.RemoteManifestLspFetcher;
 
-public class LspManagerProvider {
+public final class LspManagerProvider {
 
     private LspManagerProvider() {
         // prevent instantiation

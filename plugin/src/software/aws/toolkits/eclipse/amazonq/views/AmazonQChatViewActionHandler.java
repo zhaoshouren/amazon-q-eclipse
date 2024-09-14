@@ -11,7 +11,7 @@ import software.aws.toolkits.eclipse.amazonq.views.model.ParsedCommand;
 
 public class AmazonQChatViewActionHandler implements ViewActionHandler {
     @Override
-    public final void handleCommand(ParsedCommand parsedCommand, final Browser browser) {
+    public final void handleCommand(final ParsedCommand parsedCommand, final Browser browser) {
         switch (parsedCommand.getCommand()) {
             case CHAT_READY:
                 PluginLogger.info("Chat_ready command received");
@@ -20,7 +20,7 @@ public class AmazonQChatViewActionHandler implements ViewActionHandler {
                 PluginLogger.info("Chat_tab_add command received with params " + parsedCommand.getParams().toString());
                 break;
             case TELEMETRY_EVENT:
-            	PluginLogger.info("Telemetry command received with params " + parsedCommand.getParams().toString());
+                PluginLogger.info("Telemetry command received with params " + parsedCommand.getParams().toString());
                 break;
             default:
                 PluginLogger.info("Unhandled command: " + parsedCommand.getCommand());

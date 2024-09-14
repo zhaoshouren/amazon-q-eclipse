@@ -72,7 +72,6 @@ public class AmazonQChatWebview extends ViewPart implements ISelectionListener {
                 return null;
             }
         };
-        
     }
 
     private void contributeToActionBars(final IViewSite viewSite) {
@@ -172,8 +171,8 @@ public class AmazonQChatWebview extends ViewPart implements ISelectionListener {
                 + "            amazonQChat.createChat({\n"
                 + "               postMessage: (message) => {\n"
                 + "                    ideCommand(JSON.stringify(message));\n"
-                + "               }\n"			
-                + "			});\n"
+                + "               }\n"
+                + "         });\n"
                 + "        }\n"
                 + "    </script>", jsEntrypoint);
     }

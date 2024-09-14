@@ -12,7 +12,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.jsonrpc.messages.RequestMessage;
 
 import software.aws.toolkits.eclipse.amazonq.providers.LspProvider;
-import software.aws.toolkits.eclipse.amazonq.util.PluginUtils;
+import software.aws.toolkits.eclipse.amazonq.util.ClientMetadata;
 
 public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
 
@@ -25,11 +25,11 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
     }
 
     @Override
-    protected MessageConsumer wrapMessageConsumer(MessageConsumer consumer) {
+    protected final MessageConsumer wrapMessageConsumer(final MessageConsumer consumer) {
         return super.wrapMessageConsumer((Message message) -> {
             if (message instanceof RequestMessage && ((RequestMessage) message).getMethod().equals("initialize")) {
                 InitializeParams initParams = (InitializeParams) ((RequestMessage) message).getParams();
-                initParams.setClientInfo(new ClientInfo(PluginUtils.PLUGIN_NAME, PluginUtils.PLUGIN_VERSION));
+                initParams.setClientInfo(new ClientInfo(ClientMetadata.getPluginName(), ClientMetadata.getPluginVersion()));
             }
             consumer.consume(message);
         });

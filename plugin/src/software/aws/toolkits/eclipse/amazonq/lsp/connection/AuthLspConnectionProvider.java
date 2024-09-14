@@ -28,6 +28,6 @@ public class AuthLspConnectionProvider extends AbstractLspConnectionProvider {
     }
 
     @Override
-    protected void addEnvironmentVariables(Map<String, String> env) { }
+    protected void addEnvironmentVariables(final Map<String, String> env) { }
 
 }

@@ -26,7 +26,7 @@ public class QLspConnectionProvider extends AbstractLspConnectionProvider {
     }
 
     @Override
-    protected void addEnvironmentVariables(Map<String, String> env) {
+    protected final void addEnvironmentVariables(final Map<String, String> env) {
         env.put("ENABLE_INLINE_COMPLETION", "true");
         env.put("ENABLE_TOKEN_PROVIDER", "true");
     }

@@ -27,9 +27,6 @@ public final class PluginUtils {
 
     private static Image qIcon = null;
 
-    public static final String PLUGIN_NAME = FrameworkUtil.getBundle(PluginUtils.class).getSymbolicName();
-    public static final String PLUGIN_VERSION = FrameworkUtil.getBundle(PluginUtils.class).getVersion().toString();
-
     public static java.nio.file.Path getPluginDir(final String directoryName) {
         Bundle bundle = FrameworkUtil.getBundle(PluginUtils.class);
         File pluginDir = bundle.getDataFile(directoryName);
@@ -93,8 +90,8 @@ public final class PluginUtils {
             throw new AmazonQPluginException("Detected unsupported architecture: " + osArch);
         }
     }
-    
-    public static void openWebpage(String url) {
+
+    public static void openWebpage(final String url) {
         try {
             PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
         } catch (Exception ex) {
