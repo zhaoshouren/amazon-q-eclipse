@@ -47,6 +47,7 @@ public final class QInvocationSession extends QResource {
     private boolean isLastKeyNewLine = false;
     private int[] headOffsetAtLine = new int[500];
     private boolean hasBeenTypedahead = false;
+    private Runnable unsetVerticalIndent;
 
     // Private constructor to prevent instantiation
     private QInvocationSession() {
@@ -84,7 +85,8 @@ public final class QInvocationSession extends QResource {
             invocationTimeInMs = System.currentTimeMillis();
             System.out.println("Session started.");
 
-            var listeners = widget.getTypedListeners(SWT.Paint, QInlineRendererListener.class).collect(Collectors.toList());
+            var listeners = widget.getTypedListeners(SWT.Paint, QInlineRendererListener.class)
+                    .collect(Collectors.toList());
             System.out.println("Current listeners for " + widget);
             listeners.forEach(System.out::println);
             if (listeners.isEmpty()) {
@@ -109,7 +111,8 @@ public final class QInvocationSession extends QResource {
         var session = QInvocationSession.getInstance();
 
         try {
-            var params = InlineCompletionUtils.cwParamsFromContext(session.getEditor(), session.getViewer(), session.getInvocationOffset());
+            var params = InlineCompletionUtils.cwParamsFromContext(session.getEditor(), session.getViewer(),
+                    session.getInvocationOffset());
 
             ThreadingUtils.executeAsyncTask(() -> {
                 try {
@@ -120,8 +123,9 @@ public final class QInvocationSession extends QResource {
                         AuthUtils.updateToken().get();
                     }
 
-                    List<String> newSuggestions = LspProvider.getAmazonQServer().get().inlineCompletionWithReferences(params)
-                            .thenApply(result -> result.getItems().stream().map(InlineCompletionItem::getInsertText).collect(Collectors.toList()))
+                    List<String> newSuggestions = LspProvider.getAmazonQServer().get()
+                            .inlineCompletionWithReferences(params).thenApply(result -> result.getItems().stream()
+                                    .map(InlineCompletionItem::getInsertText).collect(Collectors.toList()))
                             .get();
 
                     Display.getDefault().asyncExec(() -> {
@@ -130,7 +134,8 @@ public final class QInvocationSession extends QResource {
                             return;
                         }
 
-                        suggestionsContext.getDetails().addAll(newSuggestions.stream().map(QSuggestionContext::new).collect(Collectors.toList()));
+                        suggestionsContext.getDetails().addAll(
+                                newSuggestions.stream().map(QSuggestionContext::new).collect(Collectors.toList()));
 
                         suggestionsContext.setCurrentIndex(0);
 
@@ -217,14 +222,7 @@ public final class QInvocationSession extends QResource {
         }
         state = QInvocationSessionState.DECISION_MADE;
 
-        // Clear previous next line indent in certain cases (always for now?)
-        // From Felix: Not really sure when or where this is needed, disabling for now.
-        // This is throwing under certain circumstances with IllegalArgument
-        // var widget = viewer.getTextWidget();
-        // var caretLine = widget.getLineAtOffset(widget.getCaretOffset());
-        // if (!isLastLine(widget, caretLine + 1)) {
-        // widget.setLineVerticalIndent(caretLine + 1, 0);
-        // }
+        unsetVerticalIndent();
     }
 
     public void setCaretMovementReason(final CaretMovementReason reason) {
@@ -330,6 +328,22 @@ public final class QInvocationSession extends QResource {
         return hasBeenTypedahead;
     }
 
+    public void setVerticalIndent(int line, int height) {
+        var widget = viewer.getTextWidget();
+        widget.setLineVerticalIndent(line, height);
+        unsetVerticalIndent = () -> {
+            var caretLine = widget.getLineAtOffset(widget.getCaretOffset());
+            widget.setLineVerticalIndent(caretLine + 1, 0);
+        };
+    }
+
+    public void unsetVerticalIndent() {
+        if (unsetVerticalIndent != null) {
+            unsetVerticalIndent.run();
+            unsetVerticalIndent = null;
+        }
+    }
+
     // Additional methods for the session can be added here
     @Override
     public void dispose() {
@@ -356,4 +370,3 @@ public final class QInvocationSession extends QResource {
         viewer = null;
     }
 }
-
