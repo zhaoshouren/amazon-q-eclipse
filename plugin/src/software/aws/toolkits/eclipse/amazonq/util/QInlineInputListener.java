@@ -58,11 +58,10 @@ public final class QInlineInputListener implements VerifyListener, VerifyKeyList
         case SWT.CR:
             if (lastKeyStrokeType == LastKeyStrokeType.OPEN_CURLY && isAutoClosingEnabled) {
                 lastKeyStrokeType = LastKeyStrokeType.OPEN_CURLY_FOLLOWED_BY_NEW_LINE;
-                // we need to unset the vertical indent prior to new line otherwise the line
-                // inserted by
-                // eclipse with the closing curly braces would inherit the extra vertical
-                // indent.
-                qInvocationSessionInstance.unsetVerticalIndent();
+                // we need to unset the vertical indent prior to new line otherwise the line inserted by
+                // eclipse with the closing curly braces would inherit the extra vertical indent.
+                int line = widget.getLineAtOffset(widget.getCaretOffset());
+                qInvocationSessionInstance.unsetVerticalIndent(line + 1);
             } else {
                 lastKeyStrokeType = LastKeyStrokeType.NORMAL_INPUT;
             }
@@ -196,9 +195,6 @@ public final class QInlineInputListener implements VerifyListener, VerifyKeyList
                 .setHasBeenTypedahead(currentOffset - qInvocationSessionInstance.getInvocationOffset() > 0);
 
         boolean isOutOfBounds = distanceTraversed >= currentSuggestion.length() || distanceTraversed < 0;
-        if (!isOutOfBounds) {
-            System.out.println("current char in suggestion: " + currentSuggestion.charAt(distanceTraversed));
-        }
         if (isOutOfBounds || !isInputAMatch(currentSuggestion, distanceTraversed, input)) {
             qInvocationSessionInstance.transitionToDecisionMade();
             qInvocationSessionInstance.end();
