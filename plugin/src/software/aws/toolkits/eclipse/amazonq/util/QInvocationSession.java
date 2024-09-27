@@ -8,7 +8,6 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CaretListener;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.widgets.Display;
@@ -41,10 +40,8 @@ public final class QInvocationSession extends QResource {
     private long invocationTimeInMs = -1L;
     private QInlineRendererListener paintListener = null;
     private CaretListener caretListener = null;
-    private VerifyKeyListener verifyKeyListener = null;
-    private int leadingWhitespaceSkipped = 0;
-    private Stack<Character> closingBrackets = new Stack<>();
-    private boolean isLastKeyNewLine = false;
+    private QInlineInputListener inputListener = null;
+    private Stack<String> closingBrackets = new Stack<>();
     private int[] headOffsetAtLine = new int[500];
     private boolean hasBeenTypedahead = false;
     private CodeReferenceAcceptanceCallback codeReferenceAcceptanceCallback = null;
@@ -95,8 +92,9 @@ public final class QInvocationSession extends QResource {
                 widget.addPaintListener(paintListener);
             }
 
-            verifyKeyListener = new QInlineVerifyKeyListener(widget);
-            widget.addVerifyKeyListener(verifyKeyListener);
+            inputListener = new QInlineInputListener(widget);
+            widget.addVerifyListener(inputListener);
+            widget.addVerifyKeyListener(inputListener);
 
             caretListener = new QInlineCaretListener(widget);
             widget.addCaretListener(caretListener);
@@ -228,14 +226,6 @@ public final class QInvocationSession extends QResource {
         this.caretMovementReason = reason;
     }
 
-    public void setLeadingWhitespaceSkipped(final int numSkipped) {
-        this.leadingWhitespaceSkipped = numSkipped;
-    }
-
-    public void setIsLastKeyNewLine(final boolean isLastKeyNewLine) {
-        this.isLastKeyNewLine = isLastKeyNewLine;
-    }
-
     public void setHeadOffsetAtLine(final int lineNum, final int offSet) throws IllegalArgumentException {
         if (lineNum >= headOffsetAtLine.length || lineNum < 0) {
             throw new IllegalArgumentException("Problematic index given");
@@ -267,16 +257,8 @@ public final class QInvocationSession extends QResource {
         return caretMovementReason;
     }
 
-    public Stack<Character> getClosingBrackets() {
+    public Stack<String> getClosingBrackets() {
         return closingBrackets;
-    }
-
-    public int getLeadingWhitespaceSkipped() {
-        return leadingWhitespaceSkipped;
-    }
-
-    public boolean isLastKeyNewLine() {
-        return isLastKeyNewLine;
     }
 
     public int getHeadOffsetAtLine(final int lineNum) throws IllegalArgumentException {
@@ -365,17 +347,16 @@ public final class QInvocationSession extends QResource {
         inlineTextFont.dispose();
         inlineTextFont = null;
         closingBrackets = null;
-        leadingWhitespaceSkipped = 0;
-        isLastKeyNewLine = false;
         caretMovementReason = CaretMovementReason.UNEXAMINED;
         hasBeenTypedahead = false;
         QInvocationSession.getInstance().getViewer().getTextWidget().redraw();
         widget.removePaintListener(paintListener);
         widget.removeCaretListener(caretListener);
-        widget.removeVerifyKeyListener(verifyKeyListener);
+        widget.removeVerifyListener(inputListener);
+        widget.removeVerifyKeyListener(inputListener);
         paintListener = null;
         caretListener = null;
-        verifyKeyListener = null;
+        inputListener = null;
         invocationOffset = -1;
         invocationTimeInMs = -1L;
         editor = null;
