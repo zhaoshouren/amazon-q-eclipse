@@ -34,6 +34,12 @@ public interface AmazonQLspServer extends LanguageServer {
     @JsonNotification("aws/chat/tabAdd")
     void tabAdd(GenericTabParams params);
 
+    @JsonNotification("aws/chat/tabRemove")
+    void tabRemove(GenericTabParams params);
+
+    @JsonNotification("aws/chat/tabChange")
+    void tabChange(GenericTabParams params);
+
     @JsonNotification("aws/chat/ready")
     void chatReady();
 
