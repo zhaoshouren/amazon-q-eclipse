@@ -11,8 +11,11 @@ import com.google.gson.Gson;
 import software.aws.toolkits.eclipse.amazonq.util.PluginLogger;
 
 public final class PluginStore {
+
     private static final Preferences PREFERENCES = Preferences.userRoot().node("software.aws.toolkits.eclipse");
+
     private static final Gson GSON = new Gson();
+
     private PluginStore() {
         // Prevent instantiation
     }

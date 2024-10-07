@@ -18,7 +18,10 @@ import software.aws.toolkits.eclipse.amazonq.chat.ChatCommunicationManager;
 import software.aws.toolkits.eclipse.amazonq.configuration.PluginStore;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.SsoProfileData;
+import software.aws.toolkits.eclipse.amazonq.lsp.model.TelemetryEvent;
+import software.aws.toolkits.eclipse.amazonq.telemetry.TelemetryService;
 import software.aws.toolkits.eclipse.amazonq.util.Constants;
+import software.aws.toolkits.eclipse.amazonq.util.ObjectMapperFactory;
 import software.aws.toolkits.eclipse.amazonq.views.model.Customization;
 import software.aws.toolkits.eclipse.amazonq.util.PluginLogger;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
@@ -71,5 +74,11 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
                 PluginLogger.error("Error processing partial result progress notification", e);
             }
         });
+    }
+
+    @Override
+    public final void telemetryEvent(final Object event) {
+        TelemetryEvent telemetryEvent = ObjectMapperFactory.getInstance().convertValue(event, TelemetryEvent.class);
+        TelemetryService.emitMetric(telemetryEvent);
     }
 }
