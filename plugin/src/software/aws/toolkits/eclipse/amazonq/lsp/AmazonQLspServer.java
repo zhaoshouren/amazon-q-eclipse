@@ -31,6 +31,9 @@ public interface AmazonQLspServer extends LanguageServer {
     @JsonRequest("aws/chat/sendChatQuickAction")
     CompletableFuture<String> sendQuickAction(EncryptedQuickActionParams encryptedQuickActionParams);
 
+    @JsonRequest("aws/chat/endChat")
+    CompletableFuture<Boolean> endChat(GenericTabParams params);
+
     @JsonNotification("aws/chat/tabAdd")
     void tabAdd(GenericTabParams params);
 

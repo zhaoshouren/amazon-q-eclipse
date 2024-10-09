@@ -27,6 +27,10 @@ public final class ChatMessage {
         return amazonQLspServer.sendQuickAction(params);
     }
 
+    public CompletableFuture<Boolean> endChat(final GenericTabParams tabParams) {
+        return amazonQLspServer.endChat(tabParams);
+    }
+
     public void sendChatReady() {
         amazonQLspServer.chatReady();
     }

@@ -21,7 +21,6 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.QuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
 import software.aws.toolkits.eclipse.amazonq.lsp.encryption.LspEncryptionManager;
 import software.aws.toolkits.eclipse.amazonq.util.JsonHandler;
-import software.aws.toolkits.eclipse.amazonq.util.PluginLogger;
 import software.aws.toolkits.eclipse.amazonq.util.ProgressNotificationUtils;
 import software.aws.toolkits.eclipse.amazonq.views.ChatUiRequestListener;
 import software.aws.toolkits.eclipse.amazonq.views.model.Command;
@@ -56,13 +55,13 @@ public final class ChatCommunicationManager {
         return instance;
     }
 
-    public CompletableFuture<ChatResult> sendMessageToChatServer(final Command command, final Object params) {
-        return chatMessageProvider.thenCompose(chatMessageProvider -> {
+    public void sendMessageToChatServer(final Command command, final Object params) {
+        chatMessageProvider.thenAcceptAsync(chatMessageProvider -> {
             try {
                 switch (command) {
                     case CHAT_SEND_PROMPT:
                         ChatRequestParams chatRequestParams = jsonHandler.convertObject(params, ChatRequestParams.class);
-                        return sendEncryptedChatMessage(chatRequestParams.getTabId(), token -> {
+                        sendEncryptedChatMessage(chatRequestParams.getTabId(), token -> {
                             String encryptedChatResult = lspEncryptionManager.encrypt(chatRequestParams);
 
                             EncryptedChatParams encryptedChatRequestParams = new EncryptedChatParams(
@@ -72,9 +71,10 @@ public final class ChatCommunicationManager {
 
                             return chatMessageProvider.sendChatPrompt(chatRequestParams.getTabId(), encryptedChatRequestParams);
                         });
+                        break;
                     case CHAT_QUICK_ACTION:
                         QuickActionParams quickActionParams = jsonHandler.convertObject(params, QuickActionParams.class);
-                        return sendEncryptedChatMessage(quickActionParams.getTabId(), token -> {
+                        sendEncryptedChatMessage(quickActionParams.getTabId(), token -> {
                             String encryptedChatResult = lspEncryptionManager.encrypt(quickActionParams);
 
                             EncryptedQuickActionParams encryptedQuickActionParams = new EncryptedQuickActionParams(
@@ -84,31 +84,35 @@ public final class ChatCommunicationManager {
 
                             return chatMessageProvider.sendQuickAction(encryptedQuickActionParams);
                         });
+                        break;
                     case CHAT_READY:
                         chatMessageProvider.sendChatReady();
-                        return CompletableFuture.completedFuture(null);
+                        break;
                     case CHAT_TAB_ADD:
                         GenericTabParams tabParamsForAdd = jsonHandler.convertObject(params, GenericTabParams.class);
                         chatMessageProvider.sendTabAdd(tabParamsForAdd);
-                        return CompletableFuture.completedFuture(null);
+                        break;
                     case CHAT_TAB_REMOVE:
                         GenericTabParams tabParamsForRemove = jsonHandler.convertObject(params, GenericTabParams.class);
                         chatMessageProvider.sendTabRemove(tabParamsForRemove);
-                        return CompletableFuture.completedFuture(null);
+                        break;
                     case CHAT_TAB_CHANGE:
                         GenericTabParams tabParamsForChange = jsonHandler.convertObject(params, GenericTabParams.class);
                         chatMessageProvider.sendTabChange(tabParamsForChange);
-                        return CompletableFuture.completedFuture(null);
+                        break;
                     case CHAT_FOLLOW_UP_CLICK:
                         FollowUpClickParams followUpClickParams = jsonHandler.convertObject(params, FollowUpClickParams.class);
                         chatMessageProvider.followUpClick(followUpClickParams);
-                        return CompletableFuture.completedFuture(null);
+                        break;
+                    case CHAT_END_CHAT:
+                        GenericTabParams tabParamsForEndChat = jsonHandler.convertObject(params, GenericTabParams.class);
+                        chatMessageProvider.endChat(tabParamsForEndChat);
+                        break;
                     default:
                         throw new AmazonQPluginException("Unhandled command in ChatCommunicationManager: " + command.toString());
                 }
             } catch (Exception e) {
-                PluginLogger.error("Error occurred in sendMessageToChatServer", e);
-                return CompletableFuture.failedFuture(new AmazonQPluginException(e));
+                throw new AmazonQPluginException("Error occurred in sendMessageToChatServer", e);
             }
         });
     }
