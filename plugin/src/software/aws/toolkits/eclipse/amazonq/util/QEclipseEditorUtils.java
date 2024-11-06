@@ -11,7 +11,6 @@ import java.util.Optional;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.ITextViewerExtension5;
@@ -209,6 +208,27 @@ public final class QEclipseEditorUtils {
         return Optional.empty();
     }
 
+    public static Optional<String> getSelectedText() {
+        var editor = getActiveTextEditor();
+        if (editor == null) {
+            return Optional.empty();
+        }
+        ISelection selection = getSelection(editor);
+        try {
+            if (selection instanceof ITextSelection) {
+                ITextSelection textSelection = (ITextSelection) selection;
+                String selectedText = textSelection.getText();
+
+                if (selectedText != null && !selectedText.isEmpty()) {
+                    return Optional.of(selectedText);
+                }
+            }
+        } catch (Exception e) {
+            throw new AmazonQPluginException("Error occurred while retrieving selected text", e);
+        }
+        return Optional.empty();
+    }
+
     private static String applyIndentation(final String text, final String indentation) {
         var lines = List.of(text.split("\n"));
         if (lines.isEmpty()) {
@@ -240,31 +260,6 @@ public final class QEclipseEditorUtils {
             // swallow error and return 0 indent level
             return "";
         }
-    }
-
-    public static String getSelectedTextOrCurrentLine() {
-        ITextEditor editor = getActiveTextEditor();
-        ISelection selection = getSelection(editor);
-
-        try {
-            if (selection instanceof ITextSelection) {
-                ITextSelection textSelection = (ITextSelection) selection;
-                String selectedText = textSelection.getText();
-
-                if (selectedText != null && !selectedText.isEmpty()) {
-                    return selectedText;
-                }
-
-                int lineNumber = textSelection.getStartLine();
-                IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
-                IRegion lineInfo = document.getLineInformation(lineNumber);
-                String currentLine = document.get(lineInfo.getOffset(), lineInfo.getLength());
-                return currentLine;
-            }
-        } catch (Exception e) {
-            throw new AmazonQPluginException("Error occurred while retrieving selected text or current line", e);
-        }
-        return null;
     }
 
     public static Font getInlineTextFont(final StyledText widget, final int inlineTextStyle) {
