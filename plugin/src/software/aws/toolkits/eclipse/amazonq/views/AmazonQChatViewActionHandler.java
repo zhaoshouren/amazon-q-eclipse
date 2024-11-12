@@ -191,6 +191,7 @@ public class AmazonQChatViewActionHandler implements ViewActionHandler {
 
         try {
             if (incomingType.equals(fullAuth) || incomingType.equals(useSupportedAuth)) {
+                Activator.getLoginService().logout();
                 Display.getDefault().asyncExec(() -> {
                     AmazonQView.showView(ToolkitLoginWebview.ID);
                 });
