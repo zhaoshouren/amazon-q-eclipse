@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="amazon-q-eclipse-feature"
-      label="AWS Q Plugin"
+      label="Amazon Q for Eclipse"
       version="1.0.0.qualifier">
 
    <description>
