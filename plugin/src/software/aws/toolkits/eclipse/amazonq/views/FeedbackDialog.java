@@ -44,6 +44,7 @@ import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
 import software.aws.toolkits.eclipse.amazonq.telemetry.UiTelemetryProvider;
 import software.aws.toolkits.eclipse.amazonq.telemetry.metadata.ClientMetadata;
 import software.aws.toolkits.eclipse.amazonq.telemetry.metadata.PluginClientMetadata;
+import software.aws.toolkits.eclipse.amazonq.util.PluginPlatform;
 import software.aws.toolkits.eclipse.amazonq.util.PluginUtils;
 import software.aws.toolkits.eclipse.amazonq.util.ThemeDetector;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
@@ -119,8 +120,6 @@ public class FeedbackDialog extends Dialog {
     protected final void okPressed() {
         Sentiment selectedSentiment = this.selectedSentiment;
         String comment = commentBox.getText();
-        Activator.getLogger()
-                .info(String.format("Selected sentiment: %s and comment: %s", selectedSentiment.toString(), comment));
         ThreadingUtils.executeAsyncTask(() -> Activator.getTelemetryService().emitFeedback(comment, selectedSentiment));
         UiTelemetryProvider.emitClickEventMetric("feedback_shareFeedbackDialogCancelButton");
         super.okPressed();
@@ -158,7 +157,11 @@ public class FeedbackDialog extends Dialog {
     @Override
     protected final Control createDialogArea(final Composite parent) {
         container = (Composite) super.createDialogArea(parent);
-        container.setLayout(new GridLayout(1, false));
+        GridLayout layout = new GridLayout(1, false);
+        layout.marginLeft = 10;
+        layout.marginRight = 10;
+        layout.marginTop = 10;
+        container.setLayout(layout);
 
         createHeaderSection(container);
         createJoinUsOnGithubSection(container);
@@ -187,7 +190,7 @@ public class FeedbackDialog extends Dialog {
     private void createHeaderSection(final Composite container) {
         Composite headlineContainer = new Composite(container, SWT.NONE);
         RowLayout rowLayout = new RowLayout();
-        rowLayout.spacing = 1; // to reduce space between two labels
+        rowLayout.spacing = PluginUtils.getPlatform().equals(PluginPlatform.WINDOWS) ? 1 : 0; // to reduce space between two labels
         headlineContainer.setLayout(rowLayout);
 
         createLabelWithFontSize(headlineContainer, "Looking for help? View the", 14);
