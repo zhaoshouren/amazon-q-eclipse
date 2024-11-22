@@ -116,7 +116,7 @@ public class AmazonQPreferencePage extends FieldEditorPreferencePage implements 
         BooleanFieldEditor telemetryOptIn = new BooleanFieldEditor(TELEMETRY_OPT_IN, "Send usage metrics to AWS", telemetryOptInComposite);
         addField(telemetryOptIn);
 
-        Link telemetryLink = createLink("See <a href=\"https://docs.aws.amazon.com/sdkref/latest/guide/overview.html\">here</a> for more detail.",
+        Link telemetryLink = createLink("See <a href=\"https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/opt-out-IDE.html#opt-out-IDE-telemetry\">here</a> for more detail.",
                 20, telemetryOptInComposite);
         telemetryLink.addSelectionListener(new SelectionAdapter() {
             @Override
