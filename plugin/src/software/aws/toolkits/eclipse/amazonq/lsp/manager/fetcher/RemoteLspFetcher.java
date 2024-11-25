@@ -26,6 +26,7 @@ import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
 
 import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
+import software.aws.toolkits.eclipse.amazonq.exception.LspError;
 import software.aws.toolkits.eclipse.amazonq.lsp.manager.LspConstants;
 import software.aws.toolkits.eclipse.amazonq.lsp.manager.LspFetchResult;
 import software.aws.toolkits.eclipse.amazonq.lsp.manager.model.ArtifactVersion;
@@ -36,6 +37,7 @@ import software.aws.toolkits.eclipse.amazonq.util.HttpClientFactory;
 import software.aws.toolkits.eclipse.amazonq.util.PluginArchitecture;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
 import software.aws.toolkits.eclipse.amazonq.telemetry.LanguageServerTelemetryProvider;
+import software.aws.toolkits.eclipse.amazonq.telemetry.metadata.ExceptionMetadata;
 import software.aws.toolkits.eclipse.amazonq.util.PluginPlatform;
 import software.aws.toolkits.telemetry.TelemetryDefinitions.LanguageServerLocation;
 import software.aws.toolkits.telemetry.TelemetryDefinitions.Result;
@@ -48,6 +50,7 @@ public final class RemoteLspFetcher implements LspFetcher {
     private final VersionRange versionRange;
     private final boolean integrityChecking;
     private final HttpClient httpClient;
+    private RecordLspSetupArgs args = new RecordLspSetupArgs();
 
     private RemoteLspFetcher(final Builder builder) {
         this.manifest = builder.manifest;
@@ -61,16 +64,18 @@ public final class RemoteLspFetcher implements LspFetcher {
     }
 
     private void emitGetServer(final Result result, final String serverVersion, final LanguageServerLocation location,
-            final String reason, final Instant start) {
-        var args = new RecordLspSetupArgs();
+            final Instant start) {
         args.setDuration(Duration.between(start, Instant.now()).toMillis());
         args.setLocation(location);
         args.setLanguageServerVersion(serverVersion);
-        args.setReason(reason);
         if (manifest != null) {
             args.setManifestSchemaVersion(manifest.manifestSchemaVersion());
         }
         LanguageServerTelemetryProvider.emitSetupGetServer(result, args);
+        args = new RecordLspSetupArgs();
+    }
+    private void setErrorReason(final String reason) {
+        args.setReason(reason);
     }
 
     @Override
@@ -83,7 +88,8 @@ public final class RemoteLspFetcher implements LspFetcher {
                     "Unable to find a language server that satisfies one or more of these conditions:"
                     + " version in range [%s), matching system's architecture: %s and platform: %s",
                     versionRange.toString(), architecture, platform);
-            emitGetServer(Result.FAILED, null, LanguageServerLocation.UNKNOWN, failureReason, start);
+            setErrorReason(LspError.NO_COMPATIBLE_LSP.toString());
+            emitGetServer(Result.FAILED, null, LanguageServerLocation.UNKNOWN, start);
             throw new AmazonQPluginException(failureReason);
         }
 
@@ -95,13 +101,12 @@ public final class RemoteLspFetcher implements LspFetcher {
         if (hasValidCache(contents, downloadDirectory)) {
             logMessageWithLicense(String.format("Launching Amazon Q language server v%s from local cache %s",
                     serverVersion.toString(), downloadDirectory), artifactVersion.get().thirdPartyLicenses());
-            emitGetServer(Result.SUCCEEDED, serverVersion, LanguageServerLocation.CACHE, null, start);
+            emitGetServer(Result.SUCCEEDED, serverVersion, LanguageServerLocation.CACHE, start);
             return new LspFetchResult(downloadDirectory.toString(), serverVersion, LanguageServerLocation.CACHE);
         }
 
         // delete invalid local cache
         ArtifactUtils.deleteDirectory(downloadDirectory);
-        emitGetServer(Result.FAILED, serverVersion, LanguageServerLocation.CACHE, null, start);
 
         // if all lsp target contents are successfully downloaded from remote location,
         // return the download location
@@ -109,7 +114,7 @@ public final class RemoteLspFetcher implements LspFetcher {
             logMessageWithLicense(String.format("Installing Amazon Q language server v%s to %s",
                     serverVersion.toString(), downloadDirectory.toString()),
                     artifactVersion.get().thirdPartyLicenses());
-            emitGetServer(Result.SUCCEEDED, serverVersion, LanguageServerLocation.REMOTE, null, start);
+            emitGetServer(Result.SUCCEEDED, serverVersion, LanguageServerLocation.REMOTE, start);
             return new LspFetchResult(downloadDirectory.toString(), serverVersion, LanguageServerLocation.REMOTE);
         }
 
@@ -119,7 +124,7 @@ public final class RemoteLspFetcher implements LspFetcher {
         Activator.getLogger().info(String.format(
                 "Unable to download Amazon Q language server version v%s. Attempting to fetch from fallback location",
                 serverVersion));
-        emitGetServer(Result.FAILED, serverVersion, LanguageServerLocation.REMOTE, null, start);
+        emitGetServer(Result.FAILED, serverVersion, LanguageServerLocation.REMOTE, start);
 
         // use the most compatible fallback cached lsp version
         var fallbackDir = getFallback(serverVersion, platform, architecture, destination);
@@ -131,12 +136,13 @@ public final class RemoteLspFetcher implements LspFetcher {
             logMessageWithLicense(String.format(
                     "Unable to install Amazon Q Language Server v%s. Launching a previous version from: %s",
                     serverVersion, fallbackDir.toString()), fallBackLspVersion.get().thirdPartyLicenses());
-            emitGetServer(Result.SUCCEEDED, fallbackVersion, LanguageServerLocation.FALLBACK, null, start);
+            emitGetServer(Result.SUCCEEDED, fallbackVersion, LanguageServerLocation.FALLBACK, start);
             return new LspFetchResult(fallbackDir.toString(), fallbackVersion, LanguageServerLocation.FALLBACK);
         }
 
         String failureReason = "Unable to find a compatible version of Amazon Q Language Server.";
-        emitGetServer(Result.FAILED, null, LanguageServerLocation.UNKNOWN, failureReason, start);
+        setErrorReason(LspError.NO_VALID_SERVER_FALLBACK.toString());
+        emitGetServer(Result.FAILED, null, LanguageServerLocation.UNKNOWN, start);
         throw new AmazonQPluginException(failureReason);
     }
 
@@ -185,7 +191,8 @@ public final class RemoteLspFetcher implements LspFetcher {
             final PluginArchitecture architecture, final Instant start) {
         if (manifestFile == null) {
             String failureReason = "No valid manifest version data was received. An error could have caused this. Please check logs.";
-            emitGetServer(Result.FAILED, null, LanguageServerLocation.UNKNOWN, failureReason, start);
+            setErrorReason(LspError.INVALID_VERSION_MANIFEST.toString());
+            emitGetServer(Result.FAILED, null, LanguageServerLocation.UNKNOWN, start);
             throw new AmazonQPluginException(failureReason);
         }
 
@@ -253,11 +260,14 @@ public final class RemoteLspFetcher implements LspFetcher {
                     return true;
                 } else {
                     ArtifactUtils.deleteDirectory(tempFolder);
+                    setErrorReason(LspError.ARTIFACT_VALIDATION_ERROR.toString());
                 }
             } else {
+                setErrorReason(LspError.SERVER_REMOTE_FETCH_ERROR + "-" + response.statusCode());
                 throw new AmazonQPluginException("Failed to download remote LSP artifact. Response code: " + response.statusCode());
             }
         } catch (Exception ex) {
+            //TODO: account for these failures in telemtry emissions
             Activator.getLogger().error("Error downloading from remote", ex);
         }
         return false;
@@ -273,7 +283,9 @@ public final class RemoteLspFetcher implements LspFetcher {
                 .filter(path -> path.toString().endsWith(".zip"))
                 .allMatch(zipFile -> extractZip(zipFile, downloadDirectory));
         } catch (Exception e) {
-            Activator.getLogger().error(String.format("Failed to extract zip files in %s", downloadDirectory), e);
+            String errorMessage = String.format("Failed to extract zip files in %s", downloadDirectory);
+            Activator.getLogger().error(errorMessage, e);
+            setErrorReason(LspError.SERVER_ZIP_EXTRACTION_ERROR.toString());
             return false;
         }
     }
@@ -288,6 +300,7 @@ public final class RemoteLspFetcher implements LspFetcher {
             ArtifactUtils.extractFile(zipFile, unzipFolder);
         } catch (IOException e) {
             Activator.getLogger().error(String.format("Failed to extract zip contents for: %s, some features may not work", zipFile.toString()), e);
+            setErrorReason(ExceptionMetadata.scrubException(LspError.SERVER_ZIP_EXTRACTION_ERROR.toString(), e));
             return false;
         }
         return true;

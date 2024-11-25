@@ -153,29 +153,17 @@ public final class DefaultLspManager implements LspManager {
     }
 
     Manifest fetchManifest() {
-        var start = Instant.now();
+        LanguageServerTelemetryProvider.setManifestStartPoint(Instant.now());
         try {
             var manifestFetcher = new VersionManifestFetcher(manifestUrl);
             var manifest = manifestFetcher.fetch()
                     .orElseThrow(() -> new AmazonQPluginException("Failed to retrieve language server manifest"));
-
-            emitGetManifest(Result.SUCCEEDED, start, null, manifest);
             return manifest;
         } catch (Exception e) {
-            emitGetManifest(Result.FAILED, start, e.getMessage(), null);
             throw new AmazonQPluginException("Failed to retrieve Amazon Q language server manifest", e);
         }
     }
 
-    private void emitGetManifest(final Result result, final Instant start, final String reason, final Manifest manifest) {
-        var args = new RecordLspSetupArgs();
-        args.setDuration(Duration.between(start, Instant.now()).toMillis());
-        args.setReason(reason);
-        if (manifest != null) {
-            args.setManifestSchemaVersion(manifest.manifestSchemaVersion());
-        }
-        LanguageServerTelemetryProvider.emitSetupGetManifest(result, args);
-    }
     private void emitGetServerWithOverride(final Instant start) {
         var args = new RecordLspSetupArgs();
         args.setDuration(Duration.between(start, Instant.now()).toMillis());
