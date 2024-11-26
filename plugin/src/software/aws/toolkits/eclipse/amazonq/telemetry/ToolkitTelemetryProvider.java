@@ -8,8 +8,10 @@ import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
 import software.aws.toolkits.telemetry.TelemetryDefinitions.Result;
 import software.aws.toolkits.telemetry.ToolkitTelemetry;
 import java.time.Instant;
+import java.util.Set;
 
 public final class ToolkitTelemetryProvider {
+    private static final Set<String> NON_PASSIVE = Set.of("ellipsesMenu", "statusBar", "shortcut");
 
     private ToolkitTelemetryProvider() {
         //prevent instantiation
@@ -30,9 +32,9 @@ public final class ToolkitTelemetryProvider {
 
     public static void emitOpenModuleEventMetric(final String module, final String source, final String failureReason) {
         Result result = Result.SUCCEEDED;
-        boolean isPassive = (!source.equals("ellipsesMenu") && !source.equals("statusBar") && !source.equals("shortcut"));
+        boolean isPassive = (source != null && !NON_PASSIVE.contains(source));
 
-        if (!failureReason.equals("none")) {
+        if (failureReason != null && !failureReason.equals("none")) {
             result = Result.FAILED;
             ToolkitTelemetry.OpenModuleEvent().reason(failureReason);
         }
@@ -47,7 +49,7 @@ public final class ToolkitTelemetryProvider {
         Activator.getTelemetryService().emitMetric(metadata);
     }
     public static void emitCloseModuleEventMetric(final String module, final String failureReason) {
-        Result result = (failureReason.equals("none")) ? Result.SUCCEEDED : Result.FAILED;
+        Result result = (failureReason == null || failureReason.equals("none")) ? Result.SUCCEEDED : Result.FAILED;
         MetricDatum metadata = ToolkitTelemetry.CloseModuleEvent()
                 .module(mapModuleId(module))
                 .result(result)
