@@ -43,13 +43,18 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
         Map<String, Object> initOptions = new HashMap<>();
         Map<String, Object> awsInitOptions = new HashMap<>();
         Map<String, Object> extendedClientInfoOptions = new HashMap<>();
-        Map<String, String> extensionOptions = new HashMap<>();
+        Map<String, Object> extensionOptions = new HashMap<>();
+        Map<String, Object> awsClientCapabilities = new HashMap<>();
+        Map<String, Object> qOptions = new HashMap<>();
         extensionOptions.put("name", USER_AGENT_CLIENT_NAME);
         extensionOptions.put("version", metadata.getPluginVersion());
         extendedClientInfoOptions.put("extension", extensionOptions);
         extendedClientInfoOptions.put("clientId", metadata.getClientId());
         extendedClientInfoOptions.put("version", metadata.getIdeVersion());
         extendedClientInfoOptions.put("name", metadata.getIdeName());
+        qOptions.put("developerProfiles", true);
+        awsClientCapabilities.put("q", qOptions);
+        awsInitOptions.put("awsClientCapabilities", awsClientCapabilities);
         awsInitOptions.put("clientInfo", extendedClientInfoOptions);
         Map<String, Object> clientCapabilities = new HashMap<>();
         Map<String, Object> window = new HashMap<>();
@@ -57,8 +62,10 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
         clientCapabilities.put("window", window);
         awsInitOptions.put("awsClientCapabilities", clientCapabilities);
         initOptions.put("aws", awsInitOptions);
+
         return initOptions;
     }
+
 
     @Override
     protected final MessageConsumer wrapMessageConsumer(final MessageConsumer consumer) {

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.eclipse.amazonq.views;
 
+import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.ProgressAdapter;
 import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.widgets.Composite;
@@ -20,7 +21,7 @@ public final class ToolkitLoginWebview extends AmazonQView implements EventObser
     public static final String ID = "software.aws.toolkits.eclipse.amazonq.views.ToolkitLoginWebview";
 
     private AmazonQViewCommonActions amazonQCommonActions;
-
+    private Browser browser;
     private final WebViewAssetProvider webViewAssetProvider;
 
     public ToolkitLoginWebview() {
@@ -33,30 +34,35 @@ public final class ToolkitLoginWebview extends AmazonQView implements EventObser
     @Override
     public Composite setupView(final Composite parent) {
         super.setupView(parent);
-
         setupParentBackground(parent);
-        var result = setupBrowser(parent);
 
-        if (!result) {
-            return parent;
-        }
-        var browser = getBrowser();
+        browser = getBrowser(parent);
 
-        browser.setVisible(false);
-        browser.addProgressListener(new ProgressAdapter() {
-            @Override
-            public void completed(final ProgressEvent event) {
-                Display.getDefault().asyncExec(() -> {
-                    if (!browser.isDisposed()) {
-                        browser.setVisible(true);
-                    }
-                });
+        if (browser == null || browser.isDisposed()) {
+            setupBrowser(parent);
+            browser = getBrowser();
+
+            if (browser == null) {
+                return parent;
             }
-        });
+            var browser = getBrowser();
 
-        webViewAssetProvider.injectAssets(browser);
+            browser.setVisible(false);
+            browser.addProgressListener(new ProgressAdapter() {
+                @Override
+                public void completed(final ProgressEvent event) {
+                    Display.getDefault().asyncExec(() -> {
+                        if (!browser.isDisposed()) {
+                            browser.setVisible(true);
+                        }
+                    });
+                }
+            });
+
+            webViewAssetProvider.injectAssets(browser);
+        }
+
         addFocusListener(parent, browser);
-
         amazonQCommonActions = getAmazonQCommonActions();
         setupAmazonQCommonActions();
 
