@@ -4,7 +4,6 @@ package software.aws.toolkits.eclipse.amazonq.lsp;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -92,7 +91,7 @@ public interface AmazonQLspServer extends LanguageServer {
     void insertToCursorPosition(InsertToCursorPositionParams params);
 
     @JsonRequest("aws/credentials/token/update")
-    CompletableFuture<ResponseMessage> updateTokenCredentials(UpdateCredentialsPayload payload);
+    CompletableFuture<Void> updateTokenCredentials(UpdateCredentialsPayload payload);
 
     @JsonNotification("aws/credentials/token/delete")
     void deleteTokenCredentials();
