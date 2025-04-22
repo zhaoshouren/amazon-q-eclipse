@@ -194,7 +194,7 @@ public class AmazonQPreferencePage extends FieldEditorPreferencePage implements 
         indexWorkerThreadsCompositeData.horizontalIndent = 20;
         indexWorkerThreadsComposite.setLayoutData(indexWorkerThreadsCompositeData);
 
-        StringFieldEditor indexWorkerThreads = new StringFieldEditor(INDEX_WORKER_THREADS, "Index Worker Threads:", 10, indexWorkerThreadsComposite);
+        StringFieldEditor indexWorkerThreads = new StringFieldEditor(INDEX_WORKER_THREADS, "Index Worker Threads", 10, indexWorkerThreadsComposite);
         addField(indexWorkerThreads);
 
         createLabel("""

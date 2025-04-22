@@ -22,13 +22,17 @@ import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
 
 public class WorkspaceChangeListener implements IResourceChangeListener {
 
-    private static WorkspaceChangeListener instance;
+    private static volatile WorkspaceChangeListener instance;
 
     private WorkspaceChangeListener() { }
 
-    public static synchronized WorkspaceChangeListener getInstance() {
+    public static WorkspaceChangeListener getInstance() {
         if (instance == null) {
-            instance = new WorkspaceChangeListener();
+            synchronized (WorkspaceChangeListener.class) {
+                if (instance == null) {
+                    instance = new WorkspaceChangeListener();
+                }
+            }
         }
         return instance;
     }
@@ -42,42 +46,44 @@ public class WorkspaceChangeListener implements IResourceChangeListener {
 
     @Override
     public void resourceChanged(IResourceChangeEvent event) {
-        IResourceDelta delta = event.getDelta();
-
-        List<FileCreate> createdFiles = new ArrayList<>();
-        List<FileDelete> deletedFiles = new ArrayList<>();
-        List<FileRename> renamedFiles = new ArrayList<>();
-
-        try {
-            delta.accept(delta1 -> {
-                if (delta1.getResource().getType() != IResource.FILE) {
-                    return true;
-                }
-
-                URI uri = delta1.getResource().getLocationURI();
-                String uriString = uri.toString();
-
-                switch (delta1.getKind()) {
-                    case IResourceDelta.ADDED:
-                        createdFiles.add(new FileCreate(uriString));
-                        break;
-                    case IResourceDelta.REMOVED:
-                        deletedFiles.add(new FileDelete(uriString));
-                        break;
-                    case IResourceDelta.CHANGED:
-                        if ((delta1.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
-                            URI oldUri = delta1.getMovedFromPath().toFile().toURI();
-                            renamedFiles.add(new FileRename(oldUri.toString(), uriString));
-                        }
-                        break;
-                }
-                return true;
-            });
-        } catch (CoreException e) {
-            Activator.getLogger().error("Unable to process file change events: " + e.getMessage());
-        }
-
         ThreadingUtils.executeAsyncTask(() -> {
+            IResourceDelta delta = event.getDelta();
+
+            List<FileCreate> createdFiles = new ArrayList<>();
+            List<FileDelete> deletedFiles = new ArrayList<>();
+            List<FileRename> renamedFiles = new ArrayList<>();
+
+            try {
+                delta.accept(delta1 -> {
+                    if (delta1.getResource().getType() != IResource.FILE) {
+                        return true;
+                    }
+
+                    URI uri = delta1.getResource().getLocationURI();
+                    String uriString = uri.toString();
+
+                    switch (delta1.getKind()) {
+                        case IResourceDelta.ADDED:
+                            createdFiles.add(new FileCreate(uriString));
+                            break;
+                        case IResourceDelta.REMOVED:
+                            deletedFiles.add(new FileDelete(uriString));
+                            break;
+                        case IResourceDelta.CHANGED:
+                            if ((delta1.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
+                                URI oldUri = delta1.getMovedFromPath().toFile().toURI();
+                                renamedFiles.add(new FileRename(oldUri.toString(), uriString));
+                            }
+                            break;
+                    }
+                    return true;
+                });
+            } catch (CoreException e) {
+                Activator.getLogger().error("Unable to process file change events", e);
+            } catch (IllegalArgumentException e) {
+                Activator.getLogger().error("Invalid resource path", e);
+            }
+
             try {
                 if (!createdFiles.isEmpty()) {
                     CreateFilesParams createParams = new CreateFilesParams(createdFiles);

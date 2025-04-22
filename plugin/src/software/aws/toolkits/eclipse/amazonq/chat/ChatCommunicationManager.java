@@ -90,8 +90,6 @@ public final class ChatCommunicationManager {
                 case CHAT_SEND_PROMPT:
                     ChatRequestParams chatRequestParams = jsonHandler.convertObject(params, ChatRequestParams.class);
                     chatRequestParams.setContext(chatRequestParams.getPrompt().context());
-                    System.out.println("ORIGINAL PARAMS: " + jsonHandler.serialize(params));
-                    System.out.println("SERIALIZED PARAMS: " + jsonHandler.serialize(chatRequestParams));
                     addEditorState(chatRequestParams, true);
                     sendEncryptedChatMessage(chatRequestParams.getTabId(), token -> {
                         String encryptedMessage = lspEncryptionManager.encrypt(chatRequestParams);
