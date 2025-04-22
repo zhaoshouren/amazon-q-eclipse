@@ -28,6 +28,7 @@ import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.LoginType;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedKind;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
+import software.aws.toolkits.eclipse.amazonq.lsp.model.ContextCommandParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.SsoProfileData;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.TelemetryEvent;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
@@ -72,6 +73,9 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
                 qConfig.put(Constants.LSP_CUSTOMIZATION_CONFIGURATION_KEY, Objects.nonNull(storedCustomization) ? storedCustomization.getArn() : null);
                 qConfig.put(Constants.LSP_ENABLE_TELEMETRY_EVENTS_CONFIGURATION_KEY, false);
                 qConfig.put(Constants.LSP_OPT_OUT_TELEMETRY_CONFIGURATION_KEY, !DefaultTelemetryService.telemetryEnabled());
+                Map<String, Object> projectContextConfig = new HashMap<>();
+                projectContextConfig.put("enableLocalIndexing", true);
+                qConfig.put("projectContext", projectContextConfig);
                 output.add(qConfig);
             } else if (item.getSection().equals(Constants.LSP_CW_CONFIGURATION_KEY)) {
                 Map<String, Boolean> cwConfig = new HashMap<>();
@@ -169,5 +173,11 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
         } catch (IllegalArgumentException ex) {
             Activator.getLogger().error("Error processing " + kind + " ssoTokenChanged notification", ex);
         }
+    }
+
+    @Override
+    public void sendContextCommands(ContextCommandParams params) {
+        System.out.println("foo");
+        
     }
 }
