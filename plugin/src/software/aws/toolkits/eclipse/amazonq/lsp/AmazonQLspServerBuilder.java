@@ -56,6 +56,11 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
     @Override
     protected final MessageConsumer wrapMessageConsumer(final MessageConsumer consumer) {
         return super.wrapMessageConsumer((Message message) -> {
+            if (message instanceof RequestMessage) {
+                System.out.println("REQUEST: " + message.toString());
+            } else if (message instanceof ResponseMessage) {
+                System.out.println("RESPONSE: " + message.toString());
+            }
             if (message instanceof RequestMessage && ((RequestMessage) message).getMethod().equals("initialize")) {
                 InitializeParams initParams = (InitializeParams) ((RequestMessage) message).getParams();
                 ClientMetadata metadata = PluginClientMetadata.getInstance();
