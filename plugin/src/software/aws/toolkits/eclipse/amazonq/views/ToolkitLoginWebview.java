@@ -66,6 +66,8 @@ public final class ToolkitLoginWebview extends AmazonQView implements EventObser
         amazonQCommonActions = getAmazonQCommonActions();
         setupAmazonQCommonActions();
 
+        parent.addDisposeListener(e -> this.preserveBrowser());
+
         return parent;
     }
 
