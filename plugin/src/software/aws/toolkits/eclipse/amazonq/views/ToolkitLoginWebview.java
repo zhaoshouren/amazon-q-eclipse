@@ -73,10 +73,6 @@ public final class ToolkitLoginWebview extends AmazonQView implements EventObser
 
     @Override
     public void dispose() {
-        var browser = getBrowser();
-        if (browser != null && !browser.isDisposed()) {
-            browser.dispose();
-        }
         super.dispose();
     }
 
