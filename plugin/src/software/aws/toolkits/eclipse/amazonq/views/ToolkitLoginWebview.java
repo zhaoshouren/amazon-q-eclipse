@@ -36,7 +36,7 @@ public final class ToolkitLoginWebview extends AmazonQView implements EventObser
         super.setupView(parent);
         setupParentBackground(parent);
 
-        browser = attachBrowser(parent);
+        browser = getAndAttachBrowser(parent);
 
         if (browser == null || browser.isDisposed()) {
             setupBrowser(parent);
