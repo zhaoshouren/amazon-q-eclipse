@@ -167,6 +167,7 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                                     }
                                 },
                                 {
+<<<<<<< HEAD
                                     disclaimerAcknowledged: %b,
                                     pairProgrammingAcknowledged: %b,
                                     agenticMode: true
@@ -178,6 +179,12 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
 =======
                             });
 >>>>>>> 607ffb4 (Add region expansion changes)
+=======
+                                    quickActionCommands: %s,
+                                    disclaimerAcknowledged: %b
+                                })
+                            }).catch(error => console.error('Error initializing chat:', error));
+>>>>>>> a4df970 (Cleanup addressing comments)
                     }
                     window.addEventListener('load', init);
                     %s
