@@ -140,7 +140,6 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                     const init = () => {
                         waitForFunction('ideCommand')
                             .then(() => {
-<<<<<<< HEAD
                                 function refreshUi() {
                                     document.querySelectorAll('[class*="mynah-ui-icon-"]').forEach(icon => {
                                         icon.style.transform = 'none';
@@ -159,32 +158,18 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                                 });
 
                                 const mynahUI = amazonQChat.createChat({
-=======
-                                    amazonQChat.createChat({
->>>>>>> 607ffb4 (Add region expansion changes)
                                     postMessage: (message) => {
                                         ideCommand(JSON.stringify(message));
                                     }
                                 },
                                 {
-<<<<<<< HEAD
                                     disclaimerAcknowledged: %b,
                                     pairProgrammingAcknowledged: %b,
                                     agenticMode: true
                                 });
-<<<<<<< HEAD
                                 window.mynah = mynahUI
                             })
                             .catch(error => console.error('Error initializing chat:', error));
-=======
-                            });
->>>>>>> 607ffb4 (Add region expansion changes)
-=======
-                                    quickActionCommands: %s,
-                                    disclaimerAcknowledged: %b
-                                })
-                            }).catch(error => console.error('Error initializing chat:', error));
->>>>>>> a4df970 (Cleanup addressing comments)
                     }
                     window.addEventListener('load', init);
                     %s
