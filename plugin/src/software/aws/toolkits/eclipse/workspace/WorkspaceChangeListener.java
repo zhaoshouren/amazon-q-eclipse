@@ -18,9 +18,10 @@ import org.eclipse.lsp4j.FileRename;
 import org.eclipse.lsp4j.RenameFilesParams;
 
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
+import software.aws.toolkits.eclipse.amazonq.preferences.AmazonQPreferencePage;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
 
-public class WorkspaceChangeListener implements IResourceChangeListener {
+public final class WorkspaceChangeListener implements IResourceChangeListener {
 
     private static volatile WorkspaceChangeListener instance;
 
@@ -39,14 +40,19 @@ public class WorkspaceChangeListener implements IResourceChangeListener {
 
     public void start() {
         ResourcesPlugin.getWorkspace().addResourceChangeListener(
-            this, 
+            this,
             IResourceChangeEvent.POST_CHANGE
         );
     }
 
     @Override
-    public void resourceChanged(IResourceChangeEvent event) {
+    public void resourceChanged(final IResourceChangeEvent event) {
         ThreadingUtils.executeAsyncTask(() -> {
+            boolean indexingEnabled = Activator.getDefault().getPreferenceStore().getBoolean(AmazonQPreferencePage.WORKSPACE_INDEX);
+            if (!indexingEnabled) {
+                return;
+            }
+
             IResourceDelta delta = event.getDelta();
 
             List<FileCreate> createdFiles = new ArrayList<>();
@@ -75,6 +81,7 @@ public class WorkspaceChangeListener implements IResourceChangeListener {
                                 renamedFiles.add(new FileRename(oldUri.toString(), uriString));
                             }
                             break;
+                        default:
                     }
                     return true;
                 });

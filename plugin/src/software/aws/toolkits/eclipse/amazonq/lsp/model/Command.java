@@ -7,5 +7,4 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Command(
     @JsonProperty("command") String command,
-    @JsonProperty("description") String description)
-{ }
+    @JsonProperty("description") String description) { }

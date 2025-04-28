@@ -28,7 +28,7 @@ public final class AwsServerCapabiltiesProvider {
                 )
             )
         );
-    
+
     private static final List<QuickActionsCommandGroup> DEFAULT_CONTEXT_COMMANDS = Collections.singletonList(
             new QuickActionsCommandGroup(
                     Arrays.asList(
@@ -54,7 +54,7 @@ public final class AwsServerCapabiltiesProvider {
         }
         return DEFAULT_CHAT_OPTIONS;
     }
-    
+
     public List<QuickActionsCommandGroup> getContextCommands() {
         return DEFAULT_CONTEXT_COMMANDS;
     }
