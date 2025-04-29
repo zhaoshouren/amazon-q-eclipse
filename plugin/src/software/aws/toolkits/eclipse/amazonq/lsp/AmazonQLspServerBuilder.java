@@ -16,6 +16,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 
 import com.google.gson.ToNumberPolicy;
 
+import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommand;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.AwsExtendedInitializeResult;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
 import software.aws.toolkits.eclipse.amazonq.telemetry.metadata.ClientMetadata;
@@ -56,6 +57,11 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
     @Override
     protected final MessageConsumer wrapMessageConsumer(final MessageConsumer consumer) {
         return super.wrapMessageConsumer((Message message) -> {
+            if (message instanceof RequestMessage) {
+                System.out.println("REQUEST: " + message.toString());
+            } else if (message instanceof ResponseMessage) {
+                System.out.println("RESPONSE: " + message.toString());
+            }
             if (message instanceof RequestMessage && ((RequestMessage) message).getMethod().equals("initialize")) {
                 InitializeParams initParams = (InitializeParams) ((RequestMessage) message).getParams();
                 ClientMetadata metadata = PluginClientMetadata.getInstance();
@@ -64,8 +70,13 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
             }
             if (message instanceof ResponseMessage && ((ResponseMessage) message).getResult() instanceof AwsExtendedInitializeResult) {
                 AwsExtendedInitializeResult result = (AwsExtendedInitializeResult) ((ResponseMessage) message).getResult();
-                var awsServerCapabiltiesProvider = AwsServerCapabiltiesProvider.getInstance();
-                awsServerCapabiltiesProvider.setAwsServerCapabilties(result.getAwsServerCapabilities());
+                var command = new ChatUIInboundCommand(
+                        "chatOptions",
+                        null,
+                        result.getAwsServerCapabilities().chatOptions(),
+                        null
+                    );
+                Activator.getEventBroker().post(ChatUIInboundCommand.class, command);
                 Activator.getLspProvider().setAmazonQServer(launcher.getRemoteProxy());
             }
             consumer.consume(message);
