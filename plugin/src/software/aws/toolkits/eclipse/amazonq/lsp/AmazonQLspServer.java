@@ -87,4 +87,5 @@ public interface AmazonQLspServer extends LanguageServer {
 
     @JsonRequest("aws/identity/updateProfile")
     CompletableFuture<Void> updateProfile(UpdateProfileParams params);
+
 }

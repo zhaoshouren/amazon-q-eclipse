@@ -13,13 +13,11 @@ import software.aws.toolkits.eclipse.amazonq.chat.ChatCommunicationManager;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatStateManager;
 import software.aws.toolkits.eclipse.amazonq.providers.assets.ChatWebViewAssetProvider;
 import software.aws.toolkits.eclipse.amazonq.providers.assets.WebViewAssetProvider;
-import software.aws.toolkits.eclipse.amazonq.views.actions.AmazonQViewCommonActions;
 
 public class AmazonQChatWebview extends AmazonQView implements ChatUiRequestListener {
 
     public static final String ID = "software.aws.toolkits.eclipse.amazonq.views.AmazonQChatWebview";
 
-    private AmazonQViewCommonActions amazonQCommonActions;
     private final ChatStateManager chatStateManager;
     private final ChatCommunicationManager chatCommunicationManager;
     private Browser browser;
@@ -71,7 +69,6 @@ public class AmazonQChatWebview extends AmazonQView implements ChatUiRequestList
         super.setupView(parent);
 
         parent.addDisposeListener(e -> chatStateManager.preserveBrowser());
-        amazonQCommonActions = getAmazonQCommonActions();
 
         chatCommunicationManager.setChatUiRequestListener(this);
 
