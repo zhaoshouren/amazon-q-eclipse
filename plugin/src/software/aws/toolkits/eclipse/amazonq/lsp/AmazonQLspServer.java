@@ -9,6 +9,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 import software.aws.toolkits.eclipse.amazonq.chat.models.ButtonClickResult;
+import software.aws.toolkits.eclipse.amazonq.chat.models.FileClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.InsertToCursorPositionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.PromptInputOptionChangeParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.GetSsoTokenParams;
@@ -55,6 +56,9 @@ public interface AmazonQLspServer extends LanguageServer {
 
     @JsonNotification("aws/chat/fileClick")
     void fileClick(Object params);
+
+    @JsonNotification("aws/chat/fileClick")
+    void fileClick(FileClickParams params);
 
     @JsonNotification("aws/chat/infoLinkClick")
     void infoLinkClick(Object params);
