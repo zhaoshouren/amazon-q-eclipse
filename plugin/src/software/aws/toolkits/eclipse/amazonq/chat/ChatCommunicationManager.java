@@ -27,6 +27,7 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.EncryptedChatParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.EncryptedQuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ErrorParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.FeedbackParams;
+import software.aws.toolkits.eclipse.amazonq.chat.models.FileClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.FollowUpClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GenericLinkClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GenericTabParams;
@@ -136,6 +137,10 @@ public final class ChatCommunicationManager {
                 case CHAT_TAB_CHANGE:
                     GenericTabParams tabParamsForChange = jsonHandler.convertObject(params, GenericTabParams.class);
                     chatMessageProvider.sendTabChange(tabParamsForChange);
+                    break;
+                case FILE_CLICK:
+                    FileClickParams fileClickParams = jsonHandler.convertObject(params, FileClickParams.class);
+                    chatMessageProvider.sendFileClick(fileClickParams);
                     break;
                 case CHAT_INFO_LINK_CLICK:
                     chatMessageProvider.sendInfoLinkClick((GenericLinkClickParams) params);
@@ -348,7 +353,7 @@ public final class ChatCommunicationManager {
         String serializedData = lspEncryptionManager.decrypt(encryptedPartialChatResult);
         Map<String, Object> partialChatResult = jsonHandler.deserialize(serializedData, Map.class);
         Object body = partialChatResult.get("body");
-        if (body == null || (body instanceof String && ((String)body).length() == 0)) {
+        if (body == null || (body instanceof String && ((String) body).length() == 0)) {
             return;
         }
 
