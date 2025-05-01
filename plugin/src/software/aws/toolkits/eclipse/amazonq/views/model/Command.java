@@ -43,8 +43,7 @@ public enum Command {
     LOGIN_BUILDER_ID("loginBuilderId"),
     LOGIN_IDC("loginIdC"),
     CANCEL_LOGIN("cancelLogin"),
-    ON_LOAD("onLoad"),
-    ON_SELECT_PROFILE("onSelectProfile");
+    ON_LOAD("onLoad");
 
     private final String commandString;
 
