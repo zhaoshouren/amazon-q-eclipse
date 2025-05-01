@@ -117,6 +117,7 @@ public class AmazonQChatViewActionHandler implements ViewActionHandler {
                     Activator.getPluginStore().put(PluginStoreKeys.PAIR_PROGRAMMING_ACKNOWLEDGED, "true");
                 }
             case STOP_CHAT_RESPONSE:
+            case BUTTON_CLICK:
                 chatCommunicationManager.sendMessageToChatServer(command, params);
                 break;
             case GET_SERIALIZED_CHAT:
