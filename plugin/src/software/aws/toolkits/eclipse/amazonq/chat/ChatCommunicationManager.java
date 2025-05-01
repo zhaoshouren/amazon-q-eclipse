@@ -39,7 +39,6 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.InlineChatRequestParams
 import software.aws.toolkits.eclipse.amazonq.chat.models.InsertToCursorPositionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.QuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ReferenceTrackerInformation;
-import software.aws.toolkits.eclipse.amazonq.chat.models.StopChatResponseParams;
 import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
 import software.aws.toolkits.eclipse.amazonq.lsp.encryption.DefaultLspEncryptionManager;
 import software.aws.toolkits.eclipse.amazonq.lsp.encryption.LspEncryptionManager;
@@ -191,7 +190,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     chatMessageProvider.sendFeedback(feedbackParams);
                     break;
                 case STOP_CHAT_RESPONSE:
-                    var stopResponseParams = jsonHandler.convertObject(params, StopChatResponseParams.class);
+                    var stopResponseParams = jsonHandler.convertObject(params, GenericTabParams.class);
                     chatMessageProvider.cancelInflightRequests(stopResponseParams.tabId());
                     break;
                 case TELEMETRY_EVENT:
