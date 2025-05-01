@@ -138,7 +138,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 case CHAT_READY:
                     ThreadingUtils.executeAsyncTask(() -> {
                         try {
-                            Thread.sleep(100);
+                            Thread.sleep(250);
                             chatMessageProvider.sendChatReady();
                             startCommandQueueProcessor();
                         } catch (InterruptedException e) {
@@ -148,7 +148,6 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     break;
                 case CHAT_TAB_ADD:
                     GenericTabParams tabParamsForAdd = jsonHandler.convertObject(params, GenericTabParams.class);
-                    TabIdProvider.setTabId(tabParamsForAdd.tabId());
                     chatMessageProvider.sendTabAdd(tabParamsForAdd);
                     break;
                 case CHAT_TAB_REMOVE:
@@ -223,6 +222,9 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                             Activator.getLogger().error("Error processing conversationClick: " + e);
                         }
                     });
+                case CREATE_PROMPT:
+                    chatMessageProvider.sendCreatePrompt(params);
+                    break;
                 default:
                     throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());
                 }
