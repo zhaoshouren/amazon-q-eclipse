@@ -58,9 +58,4 @@ public interface AmazonQLspClient extends LanguageClient {
     @JsonNotification("aws/didCreateDirectory")
     void didCreateDirectory(Object params);
 
-    @JsonRequest("aws/showSaveFileDialog")
-    CompletableFuture<ShowSaveFileDialogResult> showSaveFileDialog(ShowSaveFileDialogParams params);
-
-    @JsonRequest("aws/chat/getSerializedChat")
-    CompletableFuture<SerializedChatResult> getSerializedChat(GetSerializedChatParams params);
 }
