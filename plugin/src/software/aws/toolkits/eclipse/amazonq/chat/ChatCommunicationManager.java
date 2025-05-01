@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,6 +39,7 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.InlineChatRequestParams
 import software.aws.toolkits.eclipse.amazonq.chat.models.InsertToCursorPositionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.QuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ReferenceTrackerInformation;
+import software.aws.toolkits.eclipse.amazonq.chat.models.StopChatResponseParams;
 import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
 import software.aws.toolkits.eclipse.amazonq.lsp.encryption.DefaultLspEncryptionManager;
 import software.aws.toolkits.eclipse.amazonq.lsp.encryption.LspEncryptionManager;
@@ -188,6 +190,10 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     var feedbackParams = jsonHandler.convertObject(params, FeedbackParams.class);
                     chatMessageProvider.sendFeedback(feedbackParams);
                     break;
+                case STOP_CHAT_RESPONSE:
+                    var stopResponseParams = jsonHandler.convertObject(params, StopChatResponseParams.class);
+                    chatMessageProvider.cancelInflightRequests(stopResponseParams.tabId());
+                    break;
                 case TELEMETRY_EVENT:
                     chatMessageProvider.sendTelemetryEvent(params);
                     break;
@@ -301,7 +307,13 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             removePartialChatMessage(partialResultToken);
 
             if (exception != null) {
-                Activator.getLogger().error("An error occurred while processing chat request: " + exception.getMessage());
+                if (exception instanceof CancellationException
+                        || exception.getCause() instanceof CancellationException) {
+                    Activator.getLogger().info("Chat request was cancelled for tab: " + tabId);
+                    return null;
+                }
+                Activator.getLogger()
+                        .error("An error occurred while processing chat request: " + exception.getMessage());
                 sendErrorToUi(tabId, exception);
                 return null;
             } else {

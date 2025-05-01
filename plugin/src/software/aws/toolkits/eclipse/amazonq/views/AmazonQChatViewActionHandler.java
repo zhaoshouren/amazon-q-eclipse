@@ -146,6 +146,8 @@ public class AmazonQChatViewActionHandler implements ViewActionHandler {
                 if ("programmerModeCardId".equals(messageId)) {
                     Activator.getPluginStore().put(PluginStoreKeys.PAIR_PROGRAMMING_ACKNOWLEDGED, "true");
                 }
+            case STOP_CHAT_RESPONSE:
+                chatCommunicationManager.sendMessageToChatServer(command, params);
                 break;
             default:
                 throw new AmazonQPluginException("Unexpected command received from Amazon Q Chat: " + command.toString());

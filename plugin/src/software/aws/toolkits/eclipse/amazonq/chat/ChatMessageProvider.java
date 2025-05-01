@@ -154,7 +154,7 @@ public final class ChatMessageProvider {
         return chatMessage.sendCreatePrompt(params);
     }
 
-    private void cancelInflightRequests(final String tabId) {
+    public void cancelInflightRequests(final String tabId) {
         var inflightRequest  =  inflightRequestByTabId.getOrDefault(tabId, null);
         if (inflightRequest != null) {
             inflightRequest.cancel(true);
