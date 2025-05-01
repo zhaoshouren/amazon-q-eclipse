@@ -22,7 +22,7 @@ import org.eclipse.swt.widgets.Display;
 
 import software.aws.toolkits.eclipse.amazonq.broker.api.EventObserver;
 import software.aws.toolkits.eclipse.amazonq.chat.models.BaseChatRequestParams;
-import software.aws.toolkits.eclipse.amazonq.chat.models.PromptInputOptionChangeParams;
+import software.aws.toolkits.eclipse.amazonq.chat.models.ButtonClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatRequestParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommand;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommandName;
@@ -37,6 +37,7 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.GenericLinkClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GenericTabParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.InlineChatRequestParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.InsertToCursorPositionParams;
+import software.aws.toolkits.eclipse.amazonq.chat.models.PromptInputOptionChangeParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.QuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ReferenceTrackerInformation;
 import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
@@ -229,6 +230,10 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     });
                 case CREATE_PROMPT:
                     chatMessageProvider.sendCreatePrompt(params);
+                    break;
+                case BUTTON_CLICK:
+                    ButtonClickParams buttonClickParams = jsonHandler.convertObject(params, ButtonClickParams.class);
+                    chatMessageProvider.sendButtonClick(buttonClickParams);
                     break;
                 default:
                     throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());

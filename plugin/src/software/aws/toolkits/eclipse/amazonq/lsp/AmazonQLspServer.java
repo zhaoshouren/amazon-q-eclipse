@@ -3,11 +3,14 @@
 package software.aws.toolkits.eclipse.amazonq.lsp;
 
 import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageServer;
 
+import software.aws.toolkits.eclipse.amazonq.chat.models.ButtonClickParams;
+import software.aws.toolkits.eclipse.amazonq.chat.models.ButtonClickResult;
 import software.aws.toolkits.eclipse.amazonq.chat.models.EncryptedChatParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.EncryptedQuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.FeedbackParams;
@@ -118,5 +121,8 @@ public interface AmazonQLspServer extends LanguageServer {
 
     @JsonNotification("aws/chat/createPrompt")
     CompletableFuture<Void> createPrompt(Object params);
+
+    @JsonRequest("aws/chat/buttonClick")
+    CompletableFuture<ButtonClickResult> buttonClick(ButtonClickParams params);
 
 }

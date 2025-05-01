@@ -9,8 +9,10 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageClient;
 
+import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUpdateParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
+import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenFileDiffParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabResult;
 
@@ -28,4 +30,9 @@ public interface AmazonQLspClient extends LanguageClient {
     @JsonNotification("aws/chat/openTab")
     CompletableFuture<OpenTabResult> openTab(OpenTabParams params);
 
+    @JsonNotification("aws/openFileDiff")
+    void openFileDiff(OpenFileDiffParams params);
+
+    @JsonNotification("aws/chat/sendChatUpdate")
+    void sendChatUpdate(ChatUpdateParams params);
 }

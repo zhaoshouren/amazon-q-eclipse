@@ -33,6 +33,7 @@ public enum Command {
     CREATE_PROMPT("aws/chat/createPrompt"),
     PROMPT_OPTION_ACKNOWLEDGED("chatPromptOptionAcknowledged"),
     STOP_CHAT_RESPONSE("stopChatResponse"),
+    BUTTON_CLICK("aws/chat/buttonClick"),
 
     // Auth
     LOGIN_BUILDER_ID("loginBuilderId"),
