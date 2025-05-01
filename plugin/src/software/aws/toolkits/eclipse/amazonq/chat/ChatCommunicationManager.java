@@ -148,6 +148,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     break;
                 case CHAT_TAB_ADD:
                     GenericTabParams tabParamsForAdd = jsonHandler.convertObject(params, GenericTabParams.class);
+                    TabIdProvider.setTabId(tabParamsForAdd.tabId());
                     chatMessageProvider.sendTabAdd(tabParamsForAdd);
                     break;
                 case CHAT_TAB_REMOVE:
@@ -191,6 +192,37 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 case TELEMETRY_EVENT:
                     chatMessageProvider.sendTelemetryEvent(params);
                     break;
+                case LIST_CONVERSATIONS:
+                    ThreadingUtils.executeAsyncTask(() -> {
+                        try {
+                            Object response = chatMessageProvider.sendListConversations(params).get();
+                            var listConversationsCommand = new ChatUIInboundCommand(
+                                    "aws/chat/listConversations",
+                                    null,
+                                    response,
+                                    null
+                                );
+                            Activator.getEventBroker().post(ChatUIInboundCommand.class, listConversationsCommand);
+                        } catch (Exception e) {
+                            Activator.getLogger().error("Error processing listConversations: " + e);
+                        }
+                    });
+                    break;
+                case CONVERSATION_CLICK:
+                    ThreadingUtils.executeAsyncTask(() -> {
+                        try {
+                            Object response = chatMessageProvider.sendConversationClick(params).get();
+                            var conversationClickCommand = new ChatUIInboundCommand(
+                                    "aws/chat/conversationClick",
+                                    null,
+                                    response,
+                                    null
+                                );
+                            Activator.getEventBroker().post(ChatUIInboundCommand.class, conversationClickCommand);
+                        } catch (Exception e) {
+                            Activator.getLogger().error("Error processing conversationClick: " + e);
+                        }
+                    });
                 default:
                     throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());
                 }
