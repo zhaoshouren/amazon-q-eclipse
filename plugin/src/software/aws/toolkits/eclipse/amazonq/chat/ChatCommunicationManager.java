@@ -313,7 +313,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             if (exception != null) {
                 if (exception instanceof CancellationException
                         || exception.getCause() instanceof CancellationException) {
-                    Activator.getLogger().info("Chat request was cancelled for tab: " + tabId);
+                    handleCancellation(tabId);
                     return null;
                 }
                 Activator.getLogger()
@@ -348,6 +348,17 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 }
             }
         });
+    }
+
+    // Workaround to properly report cancellation event to chatUI
+    private void handleCancellation(final String tabId) {
+        Activator.getLogger().info("Chat request was cancelled for tab: " + tabId);
+        final String errorTitle = "You stopped your current work, please provide additional examples or ask another question.";
+
+        var errorParams = new ErrorParams(tabId, null, "", errorTitle);
+        ChatUIInboundCommand inbound = new ChatUIInboundCommand(
+                ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false);
+        sendMessageToChatUI(inbound);
     }
 
     private void sendErrorToUi(final String tabId, final Throwable exception) {
