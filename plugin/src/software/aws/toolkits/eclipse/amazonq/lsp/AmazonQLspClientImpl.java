@@ -343,7 +343,6 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
 
             if (activeEditor != null) {
                 try {
-                    IFileStore fileStore = EFS.getStore(new File(params.originalFileUri().getPath()).toURI());
                     IStorageEditorInput input = new InMemoryInput(
                             new MemoryStorage(params.originalFileUri().getPath(), ""));
 
