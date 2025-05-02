@@ -195,12 +195,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     ThreadingUtils.executeAsyncTask(() -> {
                         try {
                             Object response = chatMessageProvider.sendListConversations(params).get();
-                            var listConversationsCommand = new ChatUIInboundCommand(
-                                    "aws/chat/listConversations",
-                                    null,
-                                    response,
-                                    null
-                                );
+                            var listConversationsCommand = ChatUIInboundCommand.createCommand("aws/chat/listConversations", response);
                             Activator.getEventBroker().post(ChatUIInboundCommand.class, listConversationsCommand);
                         } catch (Exception e) {
                             Activator.getLogger().error("Error processing listConversations: " + e);
@@ -211,12 +206,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     ThreadingUtils.executeAsyncTask(() -> {
                         try {
                             Object response = chatMessageProvider.sendConversationClick(params).get();
-                            var conversationClickCommand = new ChatUIInboundCommand(
-                                    "aws/chat/conversationClick",
-                                    null,
-                                    response,
-                                    null
-                                );
+                            var conversationClickCommand = ChatUIInboundCommand.createCommand("aws/chat/conversationClick", response);
                             Activator.getEventBroker().post(ChatUIInboundCommand.class, conversationClickCommand);
                         } catch (Exception e) {
                             Activator.getLogger().error("Error processing conversationClick: " + e);
@@ -224,6 +214,17 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     });
                 case CREATE_PROMPT:
                     chatMessageProvider.sendCreatePrompt(params);
+                    break;
+                case TAB_BAR_ACTION:
+                    ThreadingUtils.executeAsyncTask(() -> {
+                        try {
+                            Object response = chatMessageProvider.sendTabBarActions(params).get();
+                            var tabBarActionsCommand = ChatUIInboundCommand.createCommand("aws/chat/tabBarAction", response);
+                            Activator.getEventBroker().post(ChatUIInboundCommand.class, tabBarActionsCommand);
+                        } catch (Exception e) {
+                            Activator.getLogger().error("Error processing tabBarActions: " + e);
+                        }
+                    });
                     break;
                 default:
                     throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());
@@ -322,7 +323,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                         ? ChatUIInboundCommandName.InlineChatPrompt.getValue()
                         : ChatUIInboundCommandName.ChatPrompt.getValue();
                     ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
-                            command, tabId, result, false);
+                            command, tabId, result, false, null);
                     sendMessageToChatUI(chatUIInboundCommand);
                     return result;
                 } catch (Exception e) {
@@ -340,7 +341,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         ErrorParams errorParams = new ErrorParams(tabId, null, errorMessage, errorTitle);
         // show error in Chat UI
         ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
-                ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false);
+                ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false, null);
         sendMessageToChatUI(chatUIInboundCommand);
     }
 
@@ -399,7 +400,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             : ChatUIInboundCommandName.ChatPrompt.getValue();
 
         ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
-                command, tabId, partialChatResult, true);
+                command, tabId, partialChatResult, true, null);
 
         sendMessageToChatUI(chatUIInboundCommand);
     }
