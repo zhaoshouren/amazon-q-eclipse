@@ -20,8 +20,11 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.action.Action;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITextViewerExtension;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
@@ -31,23 +34,14 @@ import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.ShowDocumentParams;
 import org.eclipse.lsp4j.ShowDocumentResult;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.ui.IActionBars;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.keys.IBindingService;
-import org.eclipse.ui.texteditor.IDocumentProvider;
-import org.eclipse.ui.texteditor.IDocumentProviderExtension;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.github.difflib.DiffUtils;
@@ -58,12 +52,14 @@ import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatAsyncResultManager;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatCommunicationManager;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommand;
+import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUpdateParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GetSerializedChatParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GetSerializedChatResult;
 import software.aws.toolkits.eclipse.amazonq.chat.models.SerializedChatResult;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogResult;
-import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUpdateParams;
+import software.aws.toolkits.eclipse.amazonq.editor.InMemoryInput;
+import software.aws.toolkits.eclipse.amazonq.editor.MemoryStorage;
 import software.aws.toolkits.eclipse.amazonq.inlineChat.TextDiff;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.AuthState;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.LoginType;
@@ -345,13 +341,16 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
 
             if (activeEditor != null) {
                 try {
-                    ITextEditor editor = openEditor(page, activeEditor, params.originalFileUri().getPath());
-                    makeEditorReadOnly(editor);
+                    IFileStore fileStore = EFS.getStore(new File(params.originalFileUri().getPath()).toURI());
+                    IStorageEditorInput input = new InMemoryInput(
+                            new MemoryStorage(params.originalFileUri().getPath(), ""));
 
+                    IEditorPart editor = page.openEditor(input, activeEditor.getEditorSite().getId(), true,
+                            IWorkbenchPage.MATCH_INPUT);
                     // Annotation model provides highlighting for the diff additions/deletions
-                    IAnnotationModel annotationModel = editor.getDocumentProvider()
+                    IAnnotationModel annotationModel = ((ITextEditor) editor).getDocumentProvider()
                             .getAnnotationModel(editor.getEditorInput());
-                    var document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
+                    var document = ((ITextEditor) editor).getDocumentProvider().getDocument(editor.getEditorInput());
 
                     // Clear existing diff annotations prior to starting new diff
                     var annotations = annotationModel.getAnnotationIterator();
@@ -423,7 +422,7 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
                         String annotationText = diff.isDeletion() ? "Deleted Code" : "Added Code";
                         annotationModel.addAnnotation(new Annotation(annotationType, false, annotationText), position);
                     }
-
+                    makeEditorReadOnly(editor);
                 } catch (CoreException | BadLocationException e) {
                     Activator.getLogger().info("Failed to open file/diff: " + e);
                 }
@@ -431,111 +430,23 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
         });
     }
 
-    private ITextEditor openEditor(final IWorkbenchPage page, final IEditorPart activeEditor, final String path)
-            throws CoreException {
-        IFileStore fileStore = EFS.getStore(new File(path).toURI());
-        IEditorInput input = new FileStoreEditorInput(fileStore);
-        IEditorInput readOnlyInput = new FileStoreEditorInput(fileStore) {
-            @Override
-            public String getName() {
-                return "(read-only) " + input.getName();
-            }
-
-            @Override
-            public String getToolTipText() {
-                return input.getToolTipText();
-            }
-        };
-
-        return (ITextEditor) page.openEditor(readOnlyInput, activeEditor.getEditorSite().getId(), true,
-                IWorkbenchPage.MATCH_INPUT);
-    }
-
-    private void makeEditorReadOnly(final ITextEditor editor) {
-        IActionBars actionBars = editor.getEditorSite().getActionBars();
-
-        // Disable Save action and Ctrl+S
-        actionBars.setGlobalActionHandler(ActionFactory.SAVE.getId(), new Action() {
-            @Override
-            public boolean isEnabled() {
-                return false;
-            }
-
-            @Override
-            public void runWithEvent(final Event event) {
-                event.doit = false;
-            }
-        });
-
-        // Disable key bindings
-        IBindingService bindingService = editor.getSite().getService(IBindingService.class);
-        if (bindingService != null) {
-            bindingService.setKeyFilterEnabled(false);
+    private void makeEditorReadOnly(final IEditorPart editor) {
+        ITextViewer viewer = editor.getAdapter(ITextViewer.class);
+        if (viewer != null) {
+            VerifyKeyListener verifyKeyListener = event -> event.doit = false;
+            ((ITextViewerExtension) viewer).prependVerifyKeyListener(verifyKeyListener);
         }
 
-        // Prevent "dirty" state
-        IDocumentProvider provider = editor.getDocumentProvider();
-        if (provider instanceof IDocumentProviderExtension) {
-            IDocumentProviderExtension extension = (IDocumentProviderExtension) provider;
-            extension.setCanSaveDocument(editor.getEditorInput());
+        // stop text‑modifying commands
+        ActionFactory[] ids = {ActionFactory.UNDO, ActionFactory.REDO, ActionFactory.CUT, ActionFactory.PASTE,
+                ActionFactory.DELETE};
+        for (ActionFactory id : ids) {
+            IAction a = ((ITextEditor) editor).getAction(id.getId());
+            if (a != null) {
+                a.setEnabled(false);
+            }
         }
-
-        // Add part listener to handle close events
-        editor.getSite().getPage().addPartListener(new IPartListener() {
-            @Override
-            public void partClosed(final IWorkbenchPart part) {
-                if (part == editor) {
-                    try {
-                        if (provider != null) {
-                            provider.resetDocument(editor.getEditorInput());
-                        }
-                    } catch (CoreException e) {
-                        // Handle exception
-                    }
-                }
-            }
-
-            @Override
-            public void partActivated(final IWorkbenchPart part) {
-            }
-
-            @Override
-            public void partDeactivated(final IWorkbenchPart part) {
-            }
-
-            @Override
-            public void partOpened(final IWorkbenchPart part) {
-            }
-
-            @Override
-            public void partBroughtToTop(final IWorkbenchPart part) {
-            }
-        });
-
-        // Disable other actions
-        actionBars.setGlobalActionHandler(ActionFactory.SAVE_AS.getId(), new Action() {
-            @Override
-            public boolean isEnabled() {
-                return false;
-            }
-        });
-
-        actionBars.setGlobalActionHandler(ActionFactory.CUT.getId(), new org.eclipse.jface.action.Action() {
-            @Override
-            public boolean isEnabled() {
-                return false;
-            }
-        });
-
-        actionBars.setGlobalActionHandler(ActionFactory.PASTE.getId(), new Action() {
-            @Override
-            public boolean isEnabled() {
-                return false;
-            }
-        });
-
-        // Update the action bars
-        actionBars.updateActionBars();
+        editor.doSave(new NullProgressMonitor());
     }
 
     @Override
