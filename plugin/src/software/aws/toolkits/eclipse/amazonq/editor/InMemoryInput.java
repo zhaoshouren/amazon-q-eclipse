@@ -4,7 +4,10 @@
 package software.aws.toolkits.eclipse.amazonq.editor;
 
 import org.eclipse.core.resources.IStorage;
+<<<<<<< HEAD
 import org.eclipse.core.runtime.Platform;
+=======
+>>>>>>> e87a173 (Fix open file/diff editor issues)
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IStorageEditorInput;
@@ -23,7 +26,11 @@ public final class InMemoryInput implements IStorageEditorInput {
 
     @Override
     public boolean exists() {
+<<<<<<< HEAD
         return false;
+=======
+        return true;
+>>>>>>> e87a173 (Fix open file/diff editor issues)
     }
 
     @Override
@@ -42,12 +49,22 @@ public final class InMemoryInput implements IStorageEditorInput {
     }
 
     @Override
+<<<<<<< HEAD
     public ImageDescriptor getImageDescriptor() {
+=======
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public Object getAdapter(final Class c) {
+>>>>>>> e87a173 (Fix open file/diff editor issues)
         return null;
     }
 
     @Override
+<<<<<<< HEAD
     public <T> T getAdapter(final Class<T> adapter) {
         return Platform.getAdapterManager().getAdapter(this, adapter);
+=======
+    public ImageDescriptor getImageDescriptor() {
+        return null;
+>>>>>>> e87a173 (Fix open file/diff editor issues)
     }
 }
