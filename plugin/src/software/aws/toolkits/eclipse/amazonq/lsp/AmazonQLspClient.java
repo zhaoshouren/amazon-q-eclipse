@@ -31,7 +31,7 @@ public interface AmazonQLspClient extends LanguageClient {
     @JsonNotification("aws/chat/sendContextCommands")
     void sendContextCommands(Object params);
 
-    @JsonNotification("aws/chat/openTab")
+    @JsonRequest("aws/chat/openTab")
     CompletableFuture<OpenTabResult> openTab(OpenTabParams params);
 
     @JsonRequest("aws/showSaveFileDialog")

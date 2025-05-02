@@ -36,6 +36,7 @@ public enum Command {
     GET_SERIALIZED_CHAT("aws/chat/getSerializedChat"),
     STOP_CHAT_RESPONSE("stopChatResponse"),
     BUTTON_CLICK("aws/chat/buttonClick"),
+    CHAT_OPEN_TAB("aws/chat/openTab"),
 
     // Auth
     LOGIN_BUILDER_ID("loginBuilderId"),

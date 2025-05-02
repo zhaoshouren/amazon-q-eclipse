@@ -71,6 +71,7 @@ import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenFileDiffParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabResult;
+import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabUiResponse;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.SsoProfileData;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.TelemetryEvent;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
@@ -255,9 +256,25 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
     @Override
     public final CompletableFuture<OpenTabResult> openTab(final OpenTabParams params) {
         return CompletableFuture.supplyAsync(() -> {
-            var command = ChatUIInboundCommand.createCommand("aws/chat/openTab", params);
+            String requestId = UUID.randomUUID().toString();
+            var command = ChatUIInboundCommand.createCommand("aws/chat/openTab", params, requestId);
             Activator.getEventBroker().post(ChatUIInboundCommand.class, command);
-            return new OpenTabResult(params.tabId());
+            ChatAsyncResultManager manager = ChatAsyncResultManager.getInstance();
+            manager.createRequestId(requestId);
+            OpenTabUiResponse response;
+            try {
+                Object res = ChatAsyncResultManager.getInstance().getResult(requestId);
+                response = ObjectMapperFactory.getInstance().convertValue(res, OpenTabUiResponse.class);
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to retrieve new tab response from chat UI", e);
+            } finally {
+                manager.removeRequestId(requestId);
+            }
+            if (response.result() == null) {
+                Activator.getLogger().warn("Got null tab response from UI");
+                return new OpenTabResult(null);
+            }
+            return response.result();
         });
     }
 
