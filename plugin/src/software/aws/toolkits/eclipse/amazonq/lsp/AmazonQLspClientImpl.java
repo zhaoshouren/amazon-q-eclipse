@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,12 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Position;
+import org.eclipse.jface.text.source.Annotation;
+import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.lsp4e.LanguageClientImpl;
 import org.eclipse.lsp4j.ConfigurationParams;
 import org.eclipse.lsp4j.ProgressParams;
@@ -27,9 +34,25 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.keys.IBindingService;
+import org.eclipse.ui.texteditor.IDocumentProvider;
+import org.eclipse.ui.texteditor.IDocumentProviderExtension;
+import org.eclipse.ui.texteditor.ITextEditor;
+
+import com.github.difflib.DiffUtils;
+import com.github.difflib.patch.AbstractDelta;
+import com.github.difflib.patch.Patch;
 
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatAsyncResultManager;
@@ -40,11 +63,14 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.GetSerializedChatResult
 import software.aws.toolkits.eclipse.amazonq.chat.models.SerializedChatResult;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogResult;
+import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUpdateParams;
+import software.aws.toolkits.eclipse.amazonq.inlineChat.TextDiff;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.AuthState;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.LoginType;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedKind;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
+import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenFileDiffParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabResult;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.SsoProfileData;
@@ -54,11 +80,14 @@ import software.aws.toolkits.eclipse.amazonq.preferences.AmazonQPreferencePage;
 import software.aws.toolkits.eclipse.amazonq.telemetry.service.DefaultTelemetryService;
 import software.aws.toolkits.eclipse.amazonq.util.Constants;
 import software.aws.toolkits.eclipse.amazonq.util.ObjectMapperFactory;
-import software.aws.toolkits.eclipse.amazonq.views.model.Customization;
+import software.aws.toolkits.eclipse.amazonq.util.ThemeDetector;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
+import software.aws.toolkits.eclipse.amazonq.views.model.Customization;
 
 @SuppressWarnings("restriction")
 public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQLspClient {
+
+    private ThemeDetector themeDetector = new ThemeDetector();
 
     @Override
     public final CompletableFuture<ConnectionMetadata> getConnectionMetadata() {
@@ -302,6 +331,219 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
             }
             return result;
         });
+    }
+
+    @Override
+    public final void openFileDiff(final OpenFileDiffParams params) {
+        String annotationAdded = themeDetector.isDarkTheme() ? "diffAnnotation.added.dark" : "diffAnnotation.added";
+        String annotationDeleted = themeDetector.isDarkTheme() ? "diffAnnotation.deleted.dark"
+                : "diffAnnotation.deleted";
+
+        Display.getDefault().asyncExec(() -> {
+            IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+            IEditorPart activeEditor = page.getActiveEditor();
+
+            if (activeEditor != null) {
+                try {
+                    ITextEditor editor = openEditor(page, activeEditor, params.originalFileUri().getPath());
+                    makeEditorReadOnly(editor);
+
+                    // Annotation model provides highlighting for the diff additions/deletions
+                    IAnnotationModel annotationModel = editor.getDocumentProvider()
+                            .getAnnotationModel(editor.getEditorInput());
+                    var document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
+
+                    // Clear existing diff annotations prior to starting new diff
+                    var annotations = annotationModel.getAnnotationIterator();
+                    while (annotations.hasNext()) {
+                        var annotation = annotations.next();
+                        String type = annotation.getType();
+                        if (type.startsWith("diffAnnotation.")) {
+                            annotationModel.removeAnnotation(annotation);
+                        }
+                    }
+
+                    // Split original and new code into lines for diff comparison
+                    String[] originalLines = (params.originalFileContent() != null
+                            && !params.originalFileContent().isEmpty())
+                            ? params.originalFileContent().lines().toArray(String[]::new)
+                            : new String[0];
+                    String[] newLines = (params.fileContent() != null && !params.fileContent().isEmpty())
+                                    ? params.fileContent().lines().toArray(String[]::new)
+                                    : new String[0];
+                    // Diff generation --> returns Patch object which contains deltas for each line
+                    Patch<String> patch = DiffUtils.diff(Arrays.asList(originalLines), Arrays.asList(newLines));
+
+                    StringBuilder resultText = new StringBuilder();
+                    List<TextDiff> currentDiffs = new ArrayList<>();
+                    int currentPos = 0;
+                    int currentLine = 0;
+
+                    for (AbstractDelta<String> delta : patch.getDeltas()) {
+                        // Continuously copy unchanged lines until we hit a diff
+                        while (currentLine < delta.getSource().getPosition()) {
+                            resultText.append(originalLines[currentLine]).append("\n");
+                            currentPos += originalLines[currentLine].length() + 1;
+                            currentLine++;
+                        }
+
+                        List<String> originalChangedLines = delta.getSource().getLines();
+                        List<String> newChangedLines = delta.getTarget().getLines();
+
+                        // Handle deleted lines and mark position
+                        for (String line : originalChangedLines) {
+                            resultText.append(line).append("\n");
+                            currentDiffs.add(new TextDiff(currentPos, line.length(), true));
+                            currentPos += line.length() + 1;
+                        }
+
+                        // Handle added lines and mark position
+                        for (String line : newChangedLines) {
+                            resultText.append(line).append("\n");
+                            currentDiffs.add(new TextDiff(currentPos, line.length(), false));
+                            currentPos += line.length() + 1;
+                        }
+
+                        currentLine = delta.getSource().getPosition() + delta.getSource().size();
+                    }
+                    // Loop through remaining unchanged lines
+                    while (currentLine < originalLines.length) {
+                        resultText.append(originalLines[currentLine]).append("\n");
+                        currentPos += originalLines[currentLine].length() + 1;
+                        currentLine++;
+                    }
+
+                    final String finalText = resultText.toString();
+                    document.replace(0, document.getLength(), finalText);
+
+                    // Add all annotations after text modifications are complete
+                    for (TextDiff diff : currentDiffs) {
+                        Position position = new Position(diff.offset(), diff.length());
+                        String annotationType = diff.isDeletion() ? annotationDeleted : annotationAdded;
+                        String annotationText = diff.isDeletion() ? "Deleted Code" : "Added Code";
+                        annotationModel.addAnnotation(new Annotation(annotationType, false, annotationText), position);
+                    }
+
+                } catch (CoreException | BadLocationException e) {
+                    Activator.getLogger().info("Failed to open file/diff: " + e);
+                }
+            }
+        });
+    }
+
+    private ITextEditor openEditor(final IWorkbenchPage page, final IEditorPart activeEditor, final String path)
+            throws CoreException {
+        IFileStore fileStore = EFS.getStore(new File(path).toURI());
+        IEditorInput input = new FileStoreEditorInput(fileStore);
+        IEditorInput readOnlyInput = new FileStoreEditorInput(fileStore) {
+            @Override
+            public String getName() {
+                return "(read-only) " + input.getName();
+            }
+
+            @Override
+            public String getToolTipText() {
+                return input.getToolTipText();
+            }
+        };
+
+        return (ITextEditor) page.openEditor(readOnlyInput, activeEditor.getEditorSite().getId(), true,
+                IWorkbenchPage.MATCH_INPUT);
+    }
+
+    private void makeEditorReadOnly(final ITextEditor editor) {
+        IActionBars actionBars = editor.getEditorSite().getActionBars();
+
+        // Disable Save action and Ctrl+S
+        actionBars.setGlobalActionHandler(ActionFactory.SAVE.getId(), new Action() {
+            @Override
+            public boolean isEnabled() {
+                return false;
+            }
+
+            @Override
+            public void runWithEvent(final Event event) {
+                event.doit = false;
+            }
+        });
+
+        // Disable key bindings
+        IBindingService bindingService = editor.getSite().getService(IBindingService.class);
+        if (bindingService != null) {
+            bindingService.setKeyFilterEnabled(false);
+        }
+
+        // Prevent "dirty" state
+        IDocumentProvider provider = editor.getDocumentProvider();
+        if (provider instanceof IDocumentProviderExtension) {
+            IDocumentProviderExtension extension = (IDocumentProviderExtension) provider;
+            extension.setCanSaveDocument(editor.getEditorInput());
+        }
+
+        // Add part listener to handle close events
+        editor.getSite().getPage().addPartListener(new IPartListener() {
+            @Override
+            public void partClosed(final IWorkbenchPart part) {
+                if (part == editor) {
+                    try {
+                        if (provider != null) {
+                            provider.resetDocument(editor.getEditorInput());
+                        }
+                    } catch (CoreException e) {
+                        // Handle exception
+                    }
+                }
+            }
+
+            @Override
+            public void partActivated(final IWorkbenchPart part) {
+            }
+
+            @Override
+            public void partDeactivated(final IWorkbenchPart part) {
+            }
+
+            @Override
+            public void partOpened(final IWorkbenchPart part) {
+            }
+
+            @Override
+            public void partBroughtToTop(final IWorkbenchPart part) {
+            }
+        });
+
+        // Disable other actions
+        actionBars.setGlobalActionHandler(ActionFactory.SAVE_AS.getId(), new Action() {
+            @Override
+            public boolean isEnabled() {
+                return false;
+            }
+        });
+
+        actionBars.setGlobalActionHandler(ActionFactory.CUT.getId(), new org.eclipse.jface.action.Action() {
+            @Override
+            public boolean isEnabled() {
+                return false;
+            }
+        });
+
+        actionBars.setGlobalActionHandler(ActionFactory.PASTE.getId(), new Action() {
+            @Override
+            public boolean isEnabled() {
+                return false;
+            }
+        });
+
+        // Update the action bars
+        actionBars.updateActionBars();
+    }
+
+    @Override
+    public final void sendChatUpdate(final ChatUpdateParams params) {
+        var conversationClickCommand = new ChatUIInboundCommand("aws/chat/sendChatUpdate", params.tabId(), params,
+                false, null);
+        Activator.getEventBroker().post(ChatUIInboundCommand.class, conversationClickCommand);
+
     }
 
 }

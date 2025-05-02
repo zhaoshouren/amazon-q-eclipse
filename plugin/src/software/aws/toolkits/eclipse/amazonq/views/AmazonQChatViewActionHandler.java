@@ -147,6 +147,9 @@ public class AmazonQChatViewActionHandler implements ViewActionHandler {
                 if ("programmerModeCardId".equals(messageId)) {
                     Activator.getPluginStore().put(PluginStoreKeys.PAIR_PROGRAMMING_ACKNOWLEDGED, "true");
                 }
+            case STOP_CHAT_RESPONSE:
+            case BUTTON_CLICK:
+                chatCommunicationManager.sendMessageToChatServer(command, params);
                 break;
             case TAB_BAR_ACTION:
                 chatCommunicationManager.sendMessageToChatServer(command, params);

@@ -32,7 +32,7 @@ public final class ChatAsyncResultManager {
         results.put(requestId, new CompletableFuture<>());
     }
 
-    public void removeRequestId(String requestId) {
+    public void removeRequestId(final String requestId) {
         CompletableFuture<Object> future = results.remove(requestId);
         if (future != null && !future.isDone()) {
             future.cancel(true);

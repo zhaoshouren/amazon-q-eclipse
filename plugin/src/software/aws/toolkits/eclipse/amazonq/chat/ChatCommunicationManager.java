@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,7 +22,7 @@ import org.eclipse.swt.widgets.Display;
 
 import software.aws.toolkits.eclipse.amazonq.broker.api.EventObserver;
 import software.aws.toolkits.eclipse.amazonq.chat.models.BaseChatRequestParams;
-import software.aws.toolkits.eclipse.amazonq.chat.models.PromptInputOptionChangeParams;
+import software.aws.toolkits.eclipse.amazonq.chat.models.ButtonClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatRequestParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommand;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommandName;
@@ -36,6 +37,7 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.GenericLinkClickParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GenericTabParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.InlineChatRequestParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.InsertToCursorPositionParams;
+import software.aws.toolkits.eclipse.amazonq.chat.models.PromptInputOptionChangeParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.QuickActionParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ReferenceTrackerInformation;
 import software.aws.toolkits.eclipse.amazonq.exception.AmazonQPluginException;
@@ -188,6 +190,10 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     var feedbackParams = jsonHandler.convertObject(params, FeedbackParams.class);
                     chatMessageProvider.sendFeedback(feedbackParams);
                     break;
+                case STOP_CHAT_RESPONSE:
+                    var stopResponseParams = jsonHandler.convertObject(params, GenericTabParams.class);
+                    chatMessageProvider.cancelInflightRequests(stopResponseParams.tabId());
+                    break;
                 case TELEMETRY_EVENT:
                     chatMessageProvider.sendTelemetryEvent(params);
                     break;
@@ -225,6 +231,9 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                             Activator.getLogger().error("Error processing tabBarActions: " + e);
                         }
                     });
+                case BUTTON_CLICK:
+                    ButtonClickParams buttonClickParams = jsonHandler.convertObject(params, ButtonClickParams.class);
+                    chatMessageProvider.sendButtonClick(buttonClickParams);
                     break;
                 default:
                     throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());
@@ -302,7 +311,13 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             removePartialChatMessage(partialResultToken);
 
             if (exception != null) {
-                Activator.getLogger().error("An error occurred while processing chat request: " + exception.getMessage());
+                if (exception instanceof CancellationException
+                        || exception.getCause() instanceof CancellationException) {
+                    handleCancellation(tabId);
+                    return null;
+                }
+                Activator.getLogger()
+                        .error("An error occurred while processing chat request: " + exception.getMessage());
                 sendErrorToUi(tabId, exception);
                 return null;
             } else {
@@ -333,6 +348,17 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 }
             }
         });
+    }
+
+    // Workaround to properly report cancellation event to chatUI
+    private void handleCancellation(final String tabId) {
+        Activator.getLogger().info("Chat request was cancelled for tab: " + tabId);
+        final String errorTitle = "You stopped your current work, please provide additional examples or ask another question.";
+
+        var errorParams = new ErrorParams(tabId, null, "", errorTitle);
+        ChatUIInboundCommand inbound = new ChatUIInboundCommand(
+                ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false, null);
+        sendMessageToChatUI(inbound);
     }
 
     private void sendErrorToUi(final String tabId, final Throwable exception) {

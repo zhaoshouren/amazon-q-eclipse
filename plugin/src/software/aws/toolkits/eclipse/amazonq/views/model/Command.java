@@ -34,6 +34,8 @@ public enum Command {
     PROMPT_OPTION_ACKNOWLEDGED("chatPromptOptionAcknowledged"),
     TAB_BAR_ACTION("aws/chat/tabBarAction"),
     GET_SERIALIZED_CHAT("aws/chat/getSerializedChat"),
+    STOP_CHAT_RESPONSE("stopChatResponse"),
+    BUTTON_CLICK("aws/chat/buttonClick"),
 
     // Auth
     LOGIN_BUILDER_ID("loginBuilderId"),
