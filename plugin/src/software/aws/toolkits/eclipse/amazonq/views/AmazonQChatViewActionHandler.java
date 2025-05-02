@@ -128,9 +128,6 @@ public class AmazonQChatViewActionHandler implements ViewActionHandler {
             case OPEN_SETTINGS:
                 AmazonQPreferencePage.openPreferencePane();
                 break;
-            case CREATE_PROMPT:
-                chatCommunicationManager.sendMessageToChatServer(command, params);
-                break;
             default:
                 throw new AmazonQPluginException("Unexpected command received from Amazon Q Chat: " + command.toString());
         }
