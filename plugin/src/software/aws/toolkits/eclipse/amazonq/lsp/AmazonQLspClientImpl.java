@@ -200,6 +200,11 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
                 if (isLocalFile(uri)) {
                     Display.getDefault().syncExec(() -> {
                         try {
+                            if (uri.endsWith("default.md")) {
+                                success[0] = false;
+                                Activator.getLogger().warn("Received request to open default.md - ignoring");
+                                return;
+                            }
                             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
                             IFileStore fileStore = EFS.getLocalFileSystem().getStore(new URI(uri));
                             IDE.openEditorOnFileStore(page, fileStore);
