@@ -13,7 +13,6 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.GetSerializedChatParams
 import software.aws.toolkits.eclipse.amazonq.chat.models.SerializedChatResult;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogResult;
-import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUpdateParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenFileDiffParams;
@@ -44,5 +43,5 @@ public interface AmazonQLspClient extends LanguageClient {
     void openFileDiff(OpenFileDiffParams params);
 
     @JsonNotification("aws/chat/sendChatUpdate")
-    void sendChatUpdate(ChatUpdateParams params);
+    void sendChatUpdate(Object params);
 }

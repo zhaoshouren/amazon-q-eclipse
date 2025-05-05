@@ -56,7 +56,6 @@ import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatAsyncResultManager;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatCommunicationManager;
 import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUIInboundCommand;
-import software.aws.toolkits.eclipse.amazonq.chat.models.ChatUpdateParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GetSerializedChatParams;
 import software.aws.toolkits.eclipse.amazonq.chat.models.GetSerializedChatResult;
 import software.aws.toolkits.eclipse.amazonq.chat.models.SerializedChatResult;
@@ -479,11 +478,10 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
     }
 
     @Override
-    public final void sendChatUpdate(final ChatUpdateParams params) {
-        var conversationClickCommand = new ChatUIInboundCommand("aws/chat/sendChatUpdate", params.tabId(), params,
+    public final void sendChatUpdate(final Object params) {
+        var conversationClickCommand = new ChatUIInboundCommand("aws/chat/sendChatUpdate", null, params,
                 false, null);
         Activator.getEventBroker().post(ChatUIInboundCommand.class, conversationClickCommand);
-
     }
 
 }
