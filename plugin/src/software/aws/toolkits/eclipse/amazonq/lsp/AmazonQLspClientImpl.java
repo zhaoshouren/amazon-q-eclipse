@@ -21,6 +21,7 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
@@ -38,6 +39,7 @@ import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
@@ -355,101 +357,105 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
 
     @Override
     public final void openFileDiff(final OpenFileDiffParams params) {
+        Activator.getLogger().info("Original content: " + params.originalFileContent());
+        Activator.getLogger().info("New file content: " + params.fileContent());
+
         String annotationAdded = themeDetector.isDarkTheme() ? "diffAnnotation.added.dark" : "diffAnnotation.added";
         String annotationDeleted = themeDetector.isDarkTheme() ? "diffAnnotation.deleted.dark"
                 : "diffAnnotation.deleted";
 
         Display.getDefault().asyncExec(() -> {
             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-            IEditorPart activeEditor = page.getActiveEditor();
+            try {
+                IStorageEditorInput input = new InMemoryInput(
+                        new MemoryStorage(params.originalFileUri().getPath(), ""));
 
-            if (activeEditor != null) {
-                try {
-                    IStorageEditorInput input = new InMemoryInput(
-                            new MemoryStorage(params.originalFileUri().getPath(), ""));
+                IEditorDescriptor defaultEditor = PlatformUI.getWorkbench().getEditorRegistry()
+                        .getDefaultEditor(new Path(params.originalFileUri().getPath()).lastSegment());
 
-                    IEditorPart editor = page.openEditor(input, activeEditor.getEditorSite().getId(), true,
-                            IWorkbenchPage.MATCH_INPUT);
-                    // Annotation model provides highlighting for the diff additions/deletions
-                    IAnnotationModel annotationModel = ((ITextEditor) editor).getDocumentProvider()
-                            .getAnnotationModel(editor.getEditorInput());
-                    var document = ((ITextEditor) editor).getDocumentProvider().getDocument(editor.getEditorInput());
+                IEditorPart editor = page.openEditor(input,
+                        defaultEditor != null ? defaultEditor.getId() : "org.eclipse.ui.DefaultTextEditor", true,
+                        IWorkbenchPage.MATCH_INPUT);
+                // Annotation model provides highlighting for the diff additions/deletions
+                IAnnotationModel annotationModel = ((ITextEditor) editor).getDocumentProvider()
+                        .getAnnotationModel(editor.getEditorInput());
+                var document = ((ITextEditor) editor).getDocumentProvider().getDocument(editor.getEditorInput());
 
-                    // Clear existing diff annotations prior to starting new diff
-                    var annotations = annotationModel.getAnnotationIterator();
-                    while (annotations.hasNext()) {
-                        var annotation = annotations.next();
-                        String type = annotation.getType();
-                        if (type.startsWith("diffAnnotation.")) {
-                            annotationModel.removeAnnotation(annotation);
-                        }
+                // Clear existing diff annotations prior to starting new diff
+                var annotations = annotationModel.getAnnotationIterator();
+                while (annotations.hasNext()) {
+                    var annotation = annotations.next();
+                    String type = annotation.getType();
+                    if (type.startsWith("diffAnnotation.")) {
+                        annotationModel.removeAnnotation(annotation);
                     }
+                }
 
-                    // Split original and new code into lines for diff comparison
-                    String[] originalLines = (params.originalFileContent() != null
-                            && !params.originalFileContent().isEmpty())
-                            ? params.originalFileContent().lines().toArray(String[]::new)
-                            : new String[0];
-                    String[] newLines = (params.fileContent() != null && !params.fileContent().isEmpty())
-                                    ? params.fileContent().lines().toArray(String[]::new)
-                                    : new String[0];
-                    // Diff generation --> returns Patch object which contains deltas for each line
-                    Patch<String> patch = DiffUtils.diff(Arrays.asList(originalLines), Arrays.asList(newLines));
+                // Split original and new code into lines for diff comparison
+                String[] originalLines = (params.originalFileContent() != null
+                        && !params.originalFileContent().isEmpty())
+                                ? params.originalFileContent().lines().toArray(String[]::new)
+                                : new String[0];
+                String[] newLines = (params.fileContent() != null && !params.fileContent().isEmpty())
+                        ? params.fileContent().lines().toArray(String[]::new)
+                        : new String[0];
+                // Diff generation --> returns Patch object which contains deltas for each line
+                Patch<String> patch = DiffUtils.diff(Arrays.asList(originalLines), Arrays.asList(newLines));
 
-                    StringBuilder resultText = new StringBuilder();
-                    List<TextDiff> currentDiffs = new ArrayList<>();
-                    int currentPos = 0;
-                    int currentLine = 0;
+                StringBuilder resultText = new StringBuilder();
+                List<TextDiff> currentDiffs = new ArrayList<>();
+                int currentPos = 0;
+                int currentLine = 0;
 
-                    for (AbstractDelta<String> delta : patch.getDeltas()) {
-                        // Continuously copy unchanged lines until we hit a diff
-                        while (currentLine < delta.getSource().getPosition()) {
-                            resultText.append(originalLines[currentLine]).append("\n");
-                            currentPos += originalLines[currentLine].length() + 1;
-                            currentLine++;
-                        }
-
-                        List<String> originalChangedLines = delta.getSource().getLines();
-                        List<String> newChangedLines = delta.getTarget().getLines();
-
-                        // Handle deleted lines and mark position
-                        for (String line : originalChangedLines) {
-                            resultText.append(line).append("\n");
-                            currentDiffs.add(new TextDiff(currentPos, line.length(), true));
-                            currentPos += line.length() + 1;
-                        }
-
-                        // Handle added lines and mark position
-                        for (String line : newChangedLines) {
-                            resultText.append(line).append("\n");
-                            currentDiffs.add(new TextDiff(currentPos, line.length(), false));
-                            currentPos += line.length() + 1;
-                        }
-
-                        currentLine = delta.getSource().getPosition() + delta.getSource().size();
-                    }
-                    // Loop through remaining unchanged lines
-                    while (currentLine < originalLines.length) {
+                for (AbstractDelta<String> delta : patch.getDeltas()) {
+                    // Continuously copy unchanged lines until we hit a diff
+                    while (currentLine < delta.getSource().getPosition()) {
                         resultText.append(originalLines[currentLine]).append("\n");
                         currentPos += originalLines[currentLine].length() + 1;
                         currentLine++;
                     }
 
-                    final String finalText = resultText.toString();
-                    document.replace(0, document.getLength(), finalText);
+                    List<String> originalChangedLines = delta.getSource().getLines();
+                    List<String> newChangedLines = delta.getTarget().getLines();
 
-                    // Add all annotations after text modifications are complete
-                    for (TextDiff diff : currentDiffs) {
-                        Position position = new Position(diff.offset(), diff.length());
-                        String annotationType = diff.isDeletion() ? annotationDeleted : annotationAdded;
-                        String annotationText = diff.isDeletion() ? "Deleted Code" : "Added Code";
-                        annotationModel.addAnnotation(new Annotation(annotationType, false, annotationText), position);
+                    // Handle deleted lines and mark position
+                    for (String line : originalChangedLines) {
+                        resultText.append(line).append("\n");
+                        currentDiffs.add(new TextDiff(currentPos, line.length(), true));
+                        currentPos += line.length() + 1;
                     }
-                    makeEditorReadOnly(editor);
-                } catch (CoreException | BadLocationException e) {
-                    Activator.getLogger().info("Failed to open file/diff: " + e);
+
+                    // Handle added lines and mark position
+                    for (String line : newChangedLines) {
+                        resultText.append(line).append("\n");
+                        currentDiffs.add(new TextDiff(currentPos, line.length(), false));
+                        currentPos += line.length() + 1;
+                    }
+
+                    currentLine = delta.getSource().getPosition() + delta.getSource().size();
                 }
+                // Loop through remaining unchanged lines
+                while (currentLine < originalLines.length) {
+                    resultText.append(originalLines[currentLine]).append("\n");
+                    currentPos += originalLines[currentLine].length() + 1;
+                    currentLine++;
+                }
+
+                final String finalText = resultText.toString();
+                document.replace(0, document.getLength(), finalText);
+
+                // Add all annotations after text modifications are complete
+                for (TextDiff diff : currentDiffs) {
+                    Position position = new Position(diff.offset(), diff.length());
+                    String annotationType = diff.isDeletion() ? annotationDeleted : annotationAdded;
+                    String annotationText = diff.isDeletion() ? "Deleted Code" : "Added Code";
+                    annotationModel.addAnnotation(new Annotation(annotationType, false, annotationText), position);
+                }
+                makeEditorReadOnly(editor);
+            } catch (CoreException | BadLocationException e) {
+                Activator.getLogger().info("Failed to open file/diff: " + e);
             }
+
         });
     }
 
