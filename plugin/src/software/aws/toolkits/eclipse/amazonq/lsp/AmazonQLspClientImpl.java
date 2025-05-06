@@ -356,9 +356,6 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
 
     @Override
     public final void openFileDiff(final OpenFileDiffParams params) {
-        Activator.getLogger().info("Original content: " + params.originalFileContent());
-        Activator.getLogger().info("New file content: " + params.fileContent());
-
         String annotationAdded = themeDetector.isDarkTheme() ? "diffAnnotation.added.dark" : "diffAnnotation.added";
         String annotationDeleted = themeDetector.isDarkTheme() ? "diffAnnotation.deleted.dark"
                 : "diffAnnotation.deleted";
