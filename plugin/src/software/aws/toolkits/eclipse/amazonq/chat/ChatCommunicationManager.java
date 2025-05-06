@@ -139,13 +139,8 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     break;
                 case CHAT_READY:
                     ThreadingUtils.executeAsyncTask(() -> {
-                        try {
-                            Thread.sleep(500);
-                            chatMessageProvider.sendChatReady();
-                            startCommandQueueProcessor();
-                        } catch (InterruptedException e) {
-                            Activator.getLogger().error("Chat initialization error: " + e);
-                        }
+                        chatMessageProvider.sendChatReady();
+                        startCommandQueueProcessor();
                     });
                     break;
                 case CHAT_TAB_ADD:

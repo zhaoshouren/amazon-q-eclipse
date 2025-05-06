@@ -129,6 +129,7 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
                 projectContextConfig.put(Constants.LSP_INDEX_THREADS_CONFIGURATION_KEY, indexThreadsSetting);
                 qConfig.put(Constants.LSP_PROJECT_CONTEXT_CONFIGURATION_KEY, projectContextConfig);
                 output.add(qConfig);
+                Activator.getLspProvider().activate(AmazonQLspServer.class);
             } else if (item.getSection().equals(Constants.LSP_CW_CONFIGURATION_KEY)) {
                 Map<String, Boolean> cwConfig = new HashMap<>();
                 boolean shareContentSetting = Activator.getDefault().getPreferenceStore().getBoolean(AmazonQPreferencePage.Q_DATA_SHARING);

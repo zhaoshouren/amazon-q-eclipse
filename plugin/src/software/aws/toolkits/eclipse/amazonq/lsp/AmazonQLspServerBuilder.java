@@ -72,7 +72,7 @@ public class AmazonQLspServerBuilder extends Builder<AmazonQLspServer> {
                 AwsExtendedInitializeResult result = (AwsExtendedInitializeResult) ((ResponseMessage) message).getResult();
                 var command = ChatUIInboundCommand.createCommand("chatOptions", result.getAwsServerCapabilities().chatOptions());
                 Activator.getEventBroker().post(ChatUIInboundCommand.class, command);
-                Activator.getLspProvider().setAmazonQServer(launcher.getRemoteProxy());
+                Activator.getLspProvider().setServer(AmazonQLspServer.class, launcher.getRemoteProxy());
             }
             consumer.consume(message);
         });
