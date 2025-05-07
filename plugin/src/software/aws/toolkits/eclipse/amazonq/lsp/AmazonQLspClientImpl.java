@@ -21,6 +21,7 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
@@ -364,7 +365,7 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
             try {
                 IStorageEditorInput input = new InMemoryInput(
-                        new MemoryStorage(params.originalFileUri().getPath(), ""));
+                        new MemoryStorage(new Path(params.originalFileUri().getPath()).lastSegment(), ""));
 
                 IEditorDescriptor defaultEditor = PlatformUI.getWorkbench().getEditorRegistry()
                         .getDefaultEditor(".java");
