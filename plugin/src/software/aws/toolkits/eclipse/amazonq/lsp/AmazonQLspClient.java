@@ -16,8 +16,6 @@ import software.aws.toolkits.eclipse.amazonq.chat.models.ShowSaveFileDialogResul
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenFileDiffParams;
-import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabParams;
-import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabResult;
 
 public interface AmazonQLspClient extends LanguageClient {
 
@@ -31,7 +29,7 @@ public interface AmazonQLspClient extends LanguageClient {
     void sendContextCommands(Object params);
 
     @JsonRequest("aws/chat/openTab")
-    CompletableFuture<OpenTabResult> openTab(OpenTabParams params);
+    CompletableFuture<Object> openTab(Object params);
 
     @JsonRequest("aws/showSaveFileDialog")
     CompletableFuture<ShowSaveFileDialogResult> showSaveFileDialog(ShowSaveFileDialogParams params);

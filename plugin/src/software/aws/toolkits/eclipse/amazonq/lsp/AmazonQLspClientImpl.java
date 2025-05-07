@@ -70,8 +70,6 @@ import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedKind;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.SsoTokenChangedParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.ConnectionMetadata;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenFileDiffParams;
-import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabParams;
-import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabResult;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.OpenTabUiResponse;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.SsoProfileData;
 import software.aws.toolkits.eclipse.amazonq.lsp.model.TelemetryEvent;
@@ -261,7 +259,7 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
     }
 
     @Override
-    public final CompletableFuture<OpenTabResult> openTab(final OpenTabParams params) {
+    public final CompletableFuture<Object> openTab(final Object params) {
         return CompletableFuture.supplyAsync(() -> {
             String requestId = UUID.randomUUID().toString();
             var command = ChatUIInboundCommand.createCommand("aws/chat/openTab", params, requestId);
@@ -279,7 +277,7 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
             }
             if (response.result() == null) {
                 Activator.getLogger().warn("Got null tab response from UI");
-                return new OpenTabResult(null);
+                return null;
             }
             return response.result();
         });

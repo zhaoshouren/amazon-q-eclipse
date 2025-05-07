@@ -7,6 +7,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 
 import software.aws.toolkits.eclipse.amazonq.broker.events.BrowserCompatibilityState;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
@@ -72,6 +73,7 @@ public class AmazonQBrowserProvider {
         if (hasWebViewDependency()) {
             this.browser = browser;
         }
+        setupPeriodicRefresh(browser);
         return hasWebViewDependency();
     }
 
@@ -90,6 +92,26 @@ public class AmazonQBrowserProvider {
 
     public final void updateBrowser(final Browser browser) {
         this.browser = browser;
+    }
+
+    private void setupPeriodicRefresh(Browser browser) {
+        Display.getDefault().timerExec(15000, new Runnable() {
+            @Override
+            public void run() {
+                if (!browser.isDisposed()) {
+                    browser.execute("""
+                        document.querySelectorAll('[class*="mynah-ui-icon-"]').forEach(icon => {
+                            const computed = window.getComputedStyle(icon);
+                            const mask = computed.getPropertyValue('-webkit-mask-image');
+                            icon.style.webkitMaskImage = '';
+                            icon.offsetHeight;
+                            icon.style.webkitMaskImage = mask;
+                        });
+                    """);
+                    Display.getDefault().timerExec(15000, this);
+                }
+            }
+        });
     }
 
 }
