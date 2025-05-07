@@ -12,7 +12,6 @@ public final class ChatStateManager {
     private static ChatStateManager instance;
     private Browser browser;
     private Composite dummyParent;
-    private volatile boolean hasPreservedState  = false;
 
     public static synchronized ChatStateManager getInstance() {
         if (instance == null) {
@@ -34,13 +33,7 @@ public final class ChatStateManager {
     }
 
     public synchronized void updateBrowser(final Browser browser) {
-        // resetting browser indicates that no state is preserved
-        hasPreservedState = false;
         this.browser = browser;
-    }
-
-    public synchronized boolean hasPreservedState() {
-        return hasPreservedState;
     }
 
     public void preserveBrowser() {
@@ -53,7 +46,6 @@ public final class ChatStateManager {
                 dummyParent.setVisible(false);
             }
             browser.setParent(dummyParent);
-            hasPreservedState = true;
         }
     }
 
@@ -70,6 +62,5 @@ public final class ChatStateManager {
             browser = null;
         }
         disposeDummyParent();
-        hasPreservedState = false;
     }
 }

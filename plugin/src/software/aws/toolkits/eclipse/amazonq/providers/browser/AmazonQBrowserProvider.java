@@ -7,8 +7,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 
 import software.aws.toolkits.eclipse.amazonq.broker.events.BrowserCompatibilityState;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
@@ -92,22 +90,6 @@ public class AmazonQBrowserProvider {
 
     public final void updateBrowser(final Browser browser) {
         this.browser = browser;
-    }
-
-    public final void publishBrowserCompatibilityState() {
-        Display.getDefault().asyncExec(() -> {
-            Display display = Display.getDefault();
-            Shell shell = display.getActiveShell();
-            if (shell == null) {
-                shell = new Shell(display);
-            }
-
-            Composite parent = new Composite(shell, SWT.NONE);
-            parent.setVisible(false);
-
-            setupBrowser(parent);
-            parent.dispose();
-        });
     }
 
 }

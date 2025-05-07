@@ -10,7 +10,6 @@ import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IViewSite;
 
 import software.aws.toolkits.eclipse.amazonq.providers.browser.AmazonQBrowserProvider;
 import software.aws.toolkits.eclipse.amazonq.util.ThemeDetector;
@@ -19,8 +18,6 @@ public abstract class AmazonQView extends BaseAmazonQView {
 
     private AmazonQBrowserProvider browserProvider;
     private static final ThemeDetector THEME_DETECTOR = new ThemeDetector();
-
-    private IViewSite viewSite;
 
     protected AmazonQView() {
         this.browserProvider = new AmazonQBrowserProvider();
