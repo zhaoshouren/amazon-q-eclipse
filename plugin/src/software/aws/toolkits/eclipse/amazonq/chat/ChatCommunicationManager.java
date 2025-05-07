@@ -4,6 +4,7 @@
 package software.aws.toolkits.eclipse.amazonq.chat;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -303,19 +304,22 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         return action.apply(partialResultToken).handle((encryptedChatResult, exception) -> {
             // The mapping entry no longer needs to be maintained once the final result is
             // retrieved.
-            removePartialChatMessage(partialResultToken);
 
             if (exception != null) {
                 if (exception instanceof CancellationException
                         || exception.getCause() instanceof CancellationException) {
-                    handleCancellation(tabId);
+                    handleCancellation(tabId).thenRun(() -> {
+                        removePartialChatMessage(partialResultToken);
+                    });
                     return null;
                 }
                 Activator.getLogger()
                         .error("An error occurred while processing chat request: " + exception.getMessage());
                 sendErrorToUi(tabId, exception);
+                removePartialChatMessage(partialResultToken);
                 return null;
             } else {
+                removePartialChatMessage(partialResultToken);
                 try {
                     String serializedData = lspEncryptionManager.decrypt(encryptedChatResult);
                     Map<String, Object> result = jsonHandler.deserialize(serializedData, Map.class);
@@ -346,14 +350,14 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
     }
 
     // Workaround to properly report cancellation event to chatUI
-    private void handleCancellation(final String tabId) {
+    private CompletableFuture<Void> handleCancellation(final String tabId) {
         Activator.getLogger().info("Chat request was cancelled for tab: " + tabId);
-        final String errorTitle = "You stopped your current work, please provide additional examples or ask another question.";
 
-        var errorParams = new ErrorParams(tabId, null, "", errorTitle);
+        var errorParams = new ErrorParams(tabId, null, "", "");
         ChatUIInboundCommand inbound = new ChatUIInboundCommand(
                 ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false, null);
         sendMessageToChatUI(inbound);
+        return CompletableFuture.completedFuture(null);
     }
 
     private void sendErrorToUi(final String tabId, final Throwable exception) {
@@ -411,7 +415,12 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         Map<String, Object> partialChatResult = jsonHandler.deserialize(serializedData, Map.class);
         if (partialChatResult != null) {
             Object body = partialChatResult.get("body");
-            if (body == null || (body instanceof String && ((String) body).length() == 0)) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> additionalMessages = (List<Map<String, Object>>) partialChatResult
+                    .get("additionalMessages");
+            boolean noBody = (body == null || (body instanceof String && ((String) body).length() == 0));
+            boolean noAdditionalMessages = (additionalMessages == null || additionalMessages.isEmpty());
+            if (noBody && noAdditionalMessages) {
                 return;
             }
         }
