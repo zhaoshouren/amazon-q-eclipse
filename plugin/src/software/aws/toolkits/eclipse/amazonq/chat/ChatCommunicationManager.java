@@ -344,7 +344,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                         : ChatUIInboundCommandName.ChatPrompt.getValue();
                     ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
                             command, tabId, result, false, null);
-                    commandQueue.add(chatUIInboundCommand);
+                    sendMessageToChatUI(chatUIInboundCommand);
                     return result;
                 } catch (Exception e) {
                     Activator.getLogger().error("An error occurred while processing chat response received: " + e.getMessage());
@@ -373,7 +373,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         // show error in Chat UI
         ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
                 ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false, null);
-        commandQueue.add(chatUIInboundCommand);
+        sendMessageToChatUI(chatUIInboundCommand);
     }
 
     public void setChatUiRequestListener(final ChatUiRequestListener listener) {
@@ -445,7 +445,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
                 command, tabId, partialChatResult, true, null);
 
-        commandQueue.add(chatUIInboundCommand);
+        sendMessageToChatUI(chatUIInboundCommand);
 
         // Update the last processed time for this tab
         lastProcessedTimeMap.put(tabId, currentTime);
