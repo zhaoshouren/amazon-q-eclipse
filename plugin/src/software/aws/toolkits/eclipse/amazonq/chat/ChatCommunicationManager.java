@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -68,7 +69,12 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
     private final CompletableFuture<ChatMessageProvider> chatMessageProvider;
     private final ChatPartialResultMap chatPartialResultMap;
     private final LspEncryptionManager lspEncryptionManager;
-    private final Queue<ChatUIInboundCommand> commandQueue;
+
+    private final BlockingQueue<ChatUIInboundCommand> commandQueue;
+
+    private final Map<String, Long> lastProcessedTimeMap = new ConcurrentHashMap<>();
+    private static final long DELAY_BETWEEN_PARTIALS = 500;
+
     private CompletableFuture<ChatUiRequestListener> chatUiRequestListenerFuture;
     private CompletableFuture<ChatUiRequestListener> inlineChatListenerFuture;
 
@@ -84,7 +90,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 : DefaultLspEncryptionManager.getInstance();
         chatUiRequestListenerFuture = new CompletableFuture<>();
         inlineChatListenerFuture = new CompletableFuture<>();
-        commandQueue = new ConcurrentLinkedQueue<ChatUIInboundCommand>();
+        commandQueue = new LinkedBlockingQueue<>();
         Activator.getEventBroker().subscribe(ChatUIInboundCommand.class, this);
     }
 
@@ -338,7 +344,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                         : ChatUIInboundCommandName.ChatPrompt.getValue();
                     ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
                             command, tabId, result, false, null);
-                    sendMessageToChatUI(chatUIInboundCommand);
+                    commandQueue.add(chatUIInboundCommand);
                     return result;
                 } catch (Exception e) {
                     Activator.getLogger().error("An error occurred while processing chat response received: " + e.getMessage());
@@ -367,7 +373,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         // show error in Chat UI
         ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
                 ChatUIInboundCommandName.ErrorMessage.getValue(), tabId, errorParams, false, null);
-        sendMessageToChatUI(chatUIInboundCommand);
+        commandQueue.add(chatUIInboundCommand);
     }
 
     public void setChatUiRequestListener(final ChatUiRequestListener listener) {
@@ -404,6 +410,13 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             return;
         }
 
+        long currentTime = System.currentTimeMillis();
+        Long lastProcessedTime = lastProcessedTimeMap.get(tabId);
+        if (lastProcessedTime != null && (currentTime - lastProcessedTime) < DELAY_BETWEEN_PARTIALS) {
+            // Not enough time has elapsed since the last partial response, so we skip this one
+            return;
+        }
+
         // Check to ensure Object is sent in params
         if (params.getValue().isLeft() || Objects.isNull(params.getValue().getRight())) {
             throw new AmazonQPluginException(
@@ -432,8 +445,12 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         ChatUIInboundCommand chatUIInboundCommand = new ChatUIInboundCommand(
                 command, tabId, partialChatResult, true, null);
 
-        sendMessageToChatUI(chatUIInboundCommand);
+        commandQueue.add(chatUIInboundCommand);
+
+        // Update the last processed time for this tab
+        lastProcessedTimeMap.put(tabId, currentTime);
     }
+
 
     @Override
     public void onEvent(final ChatUIInboundCommand command) {
@@ -480,18 +497,21 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
      * Removes an entry from the partialResultToken to ChatMessage's tabId map.
      */
     private void removePartialChatMessage(final String partialResultToken) {
+        String tabId = chatPartialResultMap.getValue(partialResultToken);
         chatPartialResultMap.removeEntry(partialResultToken);
+        if (tabId != null) {
+            lastProcessedTimeMap.remove(tabId);
+        }
     }
 
     private void startCommandQueueProcessor() {
         ThreadingUtils.executeAsyncTask(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    ChatUIInboundCommand command = commandQueue.poll();
-                    if (command != null) {
+                    ChatUIInboundCommand command = commandQueue.take();
+                    sendMessageToChatUI(command);
+                    while ((command = commandQueue.poll()) != null) {
                         sendMessageToChatUI(command);
-                    } else {
-                        Thread.sleep(100);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -501,6 +521,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             }
         });
     }
+
 
     public static final class Builder {
 
