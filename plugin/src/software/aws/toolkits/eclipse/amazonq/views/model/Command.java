@@ -37,6 +37,7 @@ public enum Command {
     STOP_CHAT_RESPONSE("stopChatResponse"),
     BUTTON_CLICK("aws/chat/buttonClick"),
     CHAT_OPEN_TAB("aws/chat/openTab"),
+    OPEN_SETTINGS("openSettings"),
 
     // Auth
     LOGIN_BUILDER_ID("loginBuilderId"),
