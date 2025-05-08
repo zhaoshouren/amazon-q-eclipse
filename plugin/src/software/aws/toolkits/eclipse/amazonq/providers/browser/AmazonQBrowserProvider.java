@@ -94,7 +94,7 @@ public class AmazonQBrowserProvider {
         this.browser = browser;
     }
 
-    private void setupPeriodicRefresh(Browser browser) {
+    private void setupPeriodicRefresh(final Browser browser) {
         Display.getDefault().timerExec(15000, new Runnable() {
             @Override
             public void run() {
