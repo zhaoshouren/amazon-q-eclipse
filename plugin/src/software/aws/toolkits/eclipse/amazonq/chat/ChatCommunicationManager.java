@@ -73,7 +73,9 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
     private final BlockingQueue<ChatUIInboundCommand> commandQueue;
 
     private final Map<String, Long> lastProcessedTimeMap = new ConcurrentHashMap<>();
-    private static final long DELAY_BETWEEN_PARTIALS = 500;
+    private static final int DELAY_BETWEEN_PARTIALS = 500;
+
+    private static final int MINIMUM_PARTIAL_RESPONSE_LENGTH = 50;
 
     private final ConcurrentHashMap<String, Object> partialResultLocks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Boolean> finalResultProcessed = new ConcurrentHashMap<>();
@@ -430,13 +432,6 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 return;
             }
 
-            long currentTime = System.currentTimeMillis();
-            Long lastProcessedTime = lastProcessedTimeMap.get(tabId);
-            if (lastProcessedTime != null && (currentTime - lastProcessedTime) < DELAY_BETWEEN_PARTIALS) {
-                // Not enough time has elapsed since the last partial response, so we skip this one
-                return;
-            }
-
             // Check to ensure Object is sent in params
             if (params.getValue().isLeft() || Objects.isNull(params.getValue().getRight())) {
                 throw new AmazonQPluginException(
@@ -445,14 +440,25 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
 
             String encryptedPartialChatResult = ProgressNotificationUtils.getObject(params, String.class);
             String serializedData = lspEncryptionManager.decrypt(encryptedPartialChatResult);
+            long currentTime = System.currentTimeMillis();
             Map<String, Object> partialChatResult = jsonHandler.deserialize(serializedData, Map.class);
             if (partialChatResult != null) {
                 Object body = partialChatResult.get("body");
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> additionalMessages = (List<Map<String, Object>>) partialChatResult
                         .get("additionalMessages");
-                boolean noBody = (body == null || (body instanceof String && ((String) body).length() == 0));
+
+                // If there are no additional messages, apply the delay check
                 boolean noAdditionalMessages = (additionalMessages == null || additionalMessages.isEmpty());
+                if (noAdditionalMessages) {
+                    Long lastProcessedTime = lastProcessedTimeMap.get(tabId);
+                    if (lastProcessedTime != null && (currentTime - lastProcessedTime) < DELAY_BETWEEN_PARTIALS) {
+                        // Not enough time has elapsed since the last partial response, so we skip this one
+                        return;
+                    }
+                }
+
+                boolean noBody = (body == null || (body instanceof String && ((String) body).length() < MINIMUM_PARTIAL_RESPONSE_LENGTH));
                 if (noBody && noAdditionalMessages) {
                     return;
                 }
