@@ -202,36 +202,50 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                 window.addEventListener('load', () => {
                     const isMacOs = () => navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
+                    const cursorPositions = new WeakMap();
+
+                    const getCursorPosition = (element) => {
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            const preCaretRange = range.cloneRange();
+                            preCaretRange.selectNodeContents(element);
+                            preCaretRange.setEnd(range.endContainer, range.endOffset);
+                            return preCaretRange.toString().length;
+                        }
+                        return cursorPositions.get(element) || 0;
+                    };
+
                     const selectAllContent = (element) => {
                         const range = document.createRange();
                         range.selectNodeContents(element);
                         const selection = window.getSelection();
                         selection.removeAllRanges();
                         selection.addRange(range);
+                        cursorPositions.set(element, element.innerText.length);
                     };
 
-                    const getCursorPosition = (element) => {
-                        const selection = window.getSelection();
-                        const range = selection.getRangeAt(0);
-                        const preCaretRange = range.cloneRange();
-                        preCaretRange.selectNodeContents(element);
-                        preCaretRange.setEnd(range.endContainer, range.endOffset);
-                        return preCaretRange.toString().length;
+                    const updateCursorPosition = (element, newPosition) => {
+                        const position = Math.max(0, Math.min(newPosition, element.innerText.length));
+                        cursorPositions.set(element, position);
                     };
 
-                    const addArrowKeyListener = (element) => {
+                    const addInputListener = (element) => {
+                        cursorPositions.set(element, 0);
+
+                        const updateCursorAfterInput = () => {
+                            setTimeout(() => {
+                                const newPosition = getCursorPosition(element);
+                                updateCursorPosition(element, newPosition);
+                            }, 0);
+                        };
+
+                        element.addEventListener('input', updateCursorAfterInput);
+                        element.addEventListener('paste', updateCursorAfterInput);
+
                         element.addEventListener('keydown', (event) => {
-                            // Handle select all
                             if (((isMacOs() && event.metaKey) || (!isMacOs() && event.ctrlKey)) && event.key === 'a') {
                                 selectAllContent(element);
-                                event.preventDefault();
-                                event.stopPropagation();
-                                return;
-                            }
-
-                            // Handle copy
-                            if (((isMacOs() && event.metaKey) || (!isMacOs() && event.ctrlKey)) && event.key === 'c') {
-                                copyToClipboard(element.innerText);
                                 event.preventDefault();
                                 event.stopPropagation();
                                 return;
@@ -246,6 +260,8 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                                     if (!hasText || cursorPosition === 0) {
                                         event.preventDefault();
                                         event.stopPropagation();
+                                    } else {
+                                        updateCursorPosition(element, cursorPosition - 1);
                                     }
                                     break;
 
@@ -253,22 +269,37 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                                     if (!hasText || cursorPosition === textLength) {
                                         event.preventDefault();
                                         event.stopPropagation();
+                                    } else {
+                                        updateCursorPosition(element, cursorPosition + 1);
                                     }
+                                    break;
+
+                                case 'ArrowUp':
+                                    updateCursorPosition(element, 0);
+                                    break;
+
+                                case 'ArrowDown':
+                                    updateCursorPosition(element, textLength);
                                     break;
                             }
                         }, true);
+
+                        element.addEventListener('focus', () => {
+                            const newPosition = getCursorPosition(element);
+                            updateCursorPosition(element, newPosition);
+                        });
                     };
 
-                    document.querySelectorAll('div.mynah-chat-prompt-input').forEach(addArrowKeyListener);
+                    document.querySelectorAll('div.mynah-chat-prompt-input').forEach(addInputListener);
 
                     const observer = new MutationObserver((mutations) => {
                         mutations.forEach((mutation) => {
                             mutation.addedNodes.forEach((node) => {
                                 if (node.nodeType === 1) {
                                     if (node.matches('div.mynah-chat-prompt-input')) {
-                                        addArrowKeyListener(node);
+                                        addInputListener(node);
                                     }
-                                    node.querySelectorAll('div.mynah-chat-prompt-input').forEach(addArrowKeyListener);
+                                    node.querySelectorAll('div.mynah-chat-prompt-input').forEach(addInputListener);
                                 }
                             });
                         });
@@ -281,7 +312,6 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                 });
                 """;
     }
-
 
     private void handleMessageFromUI(final Browser browser, final Object[] arguments) {
         try {

@@ -51,6 +51,7 @@ import software.aws.toolkits.eclipse.amazonq.util.ObjectMapperFactory;
 import software.aws.toolkits.eclipse.amazonq.util.ProgressNotificationUtils;
 import software.aws.toolkits.eclipse.amazonq.util.QEclipseEditorUtils;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
+import software.aws.toolkits.eclipse.amazonq.util.WorkspaceUtils;
 import software.aws.toolkits.eclipse.amazonq.views.ChatUiRequestListener;
 import software.aws.toolkits.eclipse.amazonq.views.model.ChatCodeReference;
 import software.aws.toolkits.eclipse.amazonq.views.model.Command;
@@ -73,7 +74,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
     private final BlockingQueue<ChatUIInboundCommand> commandQueue;
 
     private final Map<String, Long> lastProcessedTimeMap = new ConcurrentHashMap<>();
-    private static final int DELAY_BETWEEN_PARTIALS = 500;
+    private static final int DELAY_BETWEEN_PARTIALS = 250;
 
     private static final int MINIMUM_PARTIAL_RESPONSE_LENGTH = 50;
 
@@ -241,6 +242,9 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 case BUTTON_CLICK:
                     ButtonClickParams buttonClickParams = jsonHandler.convertObject(params, ButtonClickParams.class);
                     chatMessageProvider.sendButtonClick(buttonClickParams);
+                    ThreadingUtils.scheduleAsyncTaskWithDelay(() -> {
+                        WorkspaceUtils.refreshAllProjects();
+                    }, 1000);
                     break;
                 default:
                     throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());
@@ -467,6 +471,8 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                         // Not enough time has elapsed since the last partial response, so we skip this one
                         return;
                     }
+                } else {
+                    WorkspaceUtils.refreshAllProjects();
                 }
 
                 boolean noBody = (body == null || (body instanceof String && ((String) body).length() < MINIMUM_PARTIAL_RESPONSE_LENGTH));
