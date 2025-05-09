@@ -74,9 +74,11 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
     private final BlockingQueue<ChatUIInboundCommand> commandQueue;
 
     private final Map<String, Long> lastProcessedTimeMap = new ConcurrentHashMap<>();
-    private static final int DELAY_BETWEEN_PARTIALS = 250;
 
     private static final int MINIMUM_PARTIAL_RESPONSE_LENGTH = 50;
+    private static final int MIN_DELAY_BETWEEN_PARTIALS = 50;
+    private static final int MAX_DELAY_BETWEEN_PARTIALS = 2500;
+    private static final int CHAR_COUNT_FOR_MAX_DELAY = 5000;
 
     private final ConcurrentHashMap<String, Object> partialResultLocks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Boolean> finalResultProcessed = new ConcurrentHashMap<>();
@@ -466,10 +468,15 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 // If there are no additional messages, apply the delay check
                 boolean noAdditionalMessages = (additionalMessages == null || additionalMessages.isEmpty());
                 if (noAdditionalMessages) {
-                    Long lastProcessedTime = lastProcessedTimeMap.get(tabId);
-                    if (lastProcessedTime != null && (currentTime - lastProcessedTime) < DELAY_BETWEEN_PARTIALS) {
-                        // Not enough time has elapsed since the last partial response, so we skip this one
-                        return;
+                    if (body == null || (body instanceof String)) {
+                        String bodyString = (String) body;
+                        Long lastProcessedTime = lastProcessedTimeMap.get(tabId);
+                        if (lastProcessedTime != null) {
+                            int currentDelay = calculateDelay(bodyString);
+                            if ((currentTime - lastProcessedTime) < currentDelay) {
+                                return;
+                            }
+                        }
                     }
                 } else {
                     WorkspaceUtils.refreshAllProjects();
@@ -493,6 +500,16 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             // Update the last processed time for this tab
             lastProcessedTimeMap.put(tabId, currentTime);
         }
+    }
+
+    private int calculateDelay(final String bodyString) {
+        if (bodyString == null || bodyString.isEmpty()) {
+            return MIN_DELAY_BETWEEN_PARTIALS;
+        }
+        int length = bodyString.length();
+        double ratio = Math.min(1.0, (double) length / CHAR_COUNT_FOR_MAX_DELAY);
+        int delay = (int) (MIN_DELAY_BETWEEN_PARTIALS + (MAX_DELAY_BETWEEN_PARTIALS - MIN_DELAY_BETWEEN_PARTIALS) * ratio);
+        return delay;
     }
 
     @Override
