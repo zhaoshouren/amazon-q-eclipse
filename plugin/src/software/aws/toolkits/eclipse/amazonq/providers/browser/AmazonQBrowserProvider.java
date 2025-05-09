@@ -102,10 +102,13 @@ public class AmazonQBrowserProvider {
                     browser.execute("""
                         document.querySelectorAll('[class*="mynah-ui-icon-"]').forEach(icon => {
                             const computed = window.getComputedStyle(icon);
-                            const mask = computed.getPropertyValue('-webkit-mask-image');
+                            const webkitMask = computed.getPropertyValue('-webkit-mask-image');
+                            const standardMask = computed.getPropertyValue('mask-image');
                             icon.style.webkitMaskImage = '';
+                            icon.style.maskImage = '';
                             icon.offsetHeight;
-                            icon.style.webkitMaskImage = mask;
+                            icon.style.webkitMaskImage = webkitMask;
+                            icon.style.maskImage = standardMask;
                         });
                     """);
                     Display.getDefault().timerExec(15000, this);
