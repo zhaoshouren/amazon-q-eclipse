@@ -7,6 +7,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+
 import software.aws.toolkits.eclipse.amazonq.broker.events.BrowserCompatibilityState;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
 import software.aws.toolkits.eclipse.amazonq.util.PluginPlatform;
@@ -91,30 +92,4 @@ public class AmazonQBrowserProvider {
         this.browser = browser;
     }
 
-<<<<<<< HEAD
-=======
-    private void setupPeriodicRefresh(final Browser browser) {
-        Display.getDefault().timerExec(15000, new Runnable() {
-            @Override
-            public void run() {
-                if (!browser.isDisposed()) {
-                    browser.execute("""
-                        document.querySelectorAll('[class*="mynah-ui-icon-"]').forEach(icon => {
-                            const computed = window.getComputedStyle(icon);
-                            const webkitMask = computed.getPropertyValue('-webkit-mask-image');
-                            const standardMask = computed.getPropertyValue('mask-image');
-                            icon.style.webkitMaskImage = '';
-                            icon.style.maskImage = '';
-                            icon.offsetHeight;
-                            icon.style.webkitMaskImage = webkitMask;
-                            icon.style.maskImage = standardMask;
-                        });
-                    """);
-                }
-                Display.getDefault().timerExec(15000, this);
-            }
-        });
-    }
-
->>>>>>> 6b5f728 (Fix cancellation race condition issue)
 }
