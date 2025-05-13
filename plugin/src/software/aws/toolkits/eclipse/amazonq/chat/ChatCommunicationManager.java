@@ -51,7 +51,6 @@ import software.aws.toolkits.eclipse.amazonq.util.ObjectMapperFactory;
 import software.aws.toolkits.eclipse.amazonq.util.ProgressNotificationUtils;
 import software.aws.toolkits.eclipse.amazonq.util.QEclipseEditorUtils;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
-import software.aws.toolkits.eclipse.amazonq.util.WorkspaceUtils;
 import software.aws.toolkits.eclipse.amazonq.views.ChatUiRequestListener;
 import software.aws.toolkits.eclipse.amazonq.views.model.ChatCodeReference;
 import software.aws.toolkits.eclipse.amazonq.views.model.Command;
@@ -254,9 +253,6 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     case BUTTON_CLICK:
                         ButtonClickParams buttonClickParams = jsonHandler.convertObject(params, ButtonClickParams.class);
                         chatMessageProvider.sendButtonClick(buttonClickParams);
-                        ThreadingUtils.scheduleAsyncTaskWithDelay(() -> {
-                            WorkspaceUtils.refreshAllProjects();
-                        }, 1000);
                         break;
                     default:
                         throw new AmazonQPluginException("Unexpected command received from Chat UI: " + command.toString());
@@ -507,8 +503,6 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                         return;
                     }
                 }
-            } else if (hasAdditionalMessages) {
-                WorkspaceUtils.refreshAllProjects();
             }
 
             boolean insufficientContent = (body == null
