@@ -45,6 +45,7 @@ public abstract class AmazonQAbstractCommonActions {
             reportAnIssueAction = new ReportAnIssueAction();
             openPreferencesAction = new OpenPreferencesAction();
             changeProfileDialogContributionItem = new ChangeProfileDialogContributionItem();
+            openPreferencesAction = new OpenPreferencesAction();
         }
 
         public OpenQChatAction getOpenQChatAction() {
