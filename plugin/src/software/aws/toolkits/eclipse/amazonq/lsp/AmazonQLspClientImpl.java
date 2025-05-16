@@ -87,6 +87,7 @@ import software.aws.toolkits.eclipse.amazonq.util.ThemeDetector;
 import software.aws.toolkits.eclipse.amazonq.util.ThreadingUtils;
 import software.aws.toolkits.eclipse.amazonq.util.WorkspaceUtils;
 import software.aws.toolkits.eclipse.amazonq.views.model.Customization;
+import software.aws.toolkits.eclipse.amazonq.views.model.UpdateRedirectUrlCommand;
 
 @SuppressWarnings("restriction")
 public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQLspClient {
@@ -204,6 +205,8 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
         return CompletableFuture.supplyAsync(() -> {
             final boolean[] success = new boolean[1];
                 if (params.getExternal() != null && params.getExternal()) {
+                    var command = new UpdateRedirectUrlCommand(uri);
+                    Activator.getEventBroker().post(UpdateRedirectUrlCommand.class, command);
                     Display.getDefault().syncExec(() -> {
                         try {
                             PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(uri));

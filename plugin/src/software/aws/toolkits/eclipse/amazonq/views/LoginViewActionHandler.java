@@ -88,7 +88,6 @@ public class LoginViewActionHandler implements ViewActionHandler {
             browser.execute("changeTheme(" + THEME_DETECTOR.isDarkTheme() + ");");
             browser.execute(String.format("ideClient.prepareUi(%s)", js));
             browser.execute("ideClient.updateAuthorization('')");
-            browser.execute("document.oncontextmenu = e => e.preventDefault();");
             break;
         default:
             Activator.getLogger()

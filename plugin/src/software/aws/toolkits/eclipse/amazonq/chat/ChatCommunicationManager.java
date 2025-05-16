@@ -85,6 +85,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
     private CompletableFuture<ChatUiRequestListener> chatUiRequestListenerFuture;
     private CompletableFuture<ChatUiRequestListener> inlineChatListenerFuture;
 
+    private volatile boolean isActive = false;
     private volatile boolean isQueueProcessorRunning = false;
     private volatile Thread queueProcessorThread;
 
@@ -432,6 +433,10 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         }
     }
 
+    public void activate() {
+        this.isActive = true;
+    }
+
     /*
      * Handles chat progress notifications from the Amazon Q LSP server. - Process
      * partial results for Chat messages if provided token is maintained by
@@ -590,6 +595,9 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
             queueProcessorThread = Thread.currentThread();
             while (isQueueProcessorRunning && !Thread.currentThread().isInterrupted()) {
                 try {
+                    if (!isActive) {
+                        break;
+                    }
                     ChatUIInboundCommand command = commandQueue.take();
                     sendMessageToChatUI(command);
                     while ((command = commandQueue.poll()) != null) {
