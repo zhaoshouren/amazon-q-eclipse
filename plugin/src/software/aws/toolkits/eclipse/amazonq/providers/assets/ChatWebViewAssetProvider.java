@@ -12,9 +12,6 @@ import java.util.Optional;
 
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.BrowserFunction;
-import org.eclipse.swt.browser.ProgressAdapter;
-import org.eclipse.swt.browser.ProgressEvent;
-import org.eclipse.swt.widgets.Display;
 
 import software.aws.toolkits.eclipse.amazonq.broker.events.ChatWebViewAssetState;
 import software.aws.toolkits.eclipse.amazonq.chat.ChatCommunicationManager;
@@ -86,21 +83,6 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                 return null;
             }
         };
-
-        // Inject chat theme after mynah-ui has loaded
-        browser.addProgressListener(new ProgressAdapter() {
-            @Override
-            public void completed(final ProgressEvent event) {
-                Display.getDefault().syncExec(() -> {
-                    try {
-                        chatTheme.injectTheme(browser);
-                    } catch (Exception e) {
-                        Activator.getLogger().info("Error occurred while injecting theme into Q chat", e);
-                    }
-                });
-            }
-        });
-
         browser.setText(content.get());
     }
 
@@ -111,6 +93,7 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
         }
 
         String chatJsPath = chatAsset.get();
+        String themeVariables = chatTheme.getThemeVariables();
 
         return Optional.of(String.format("""
                 <!DOCTYPE html>
@@ -124,34 +107,27 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                         img-src 'self' data:; object-src 'none'; base-uri 'none'; connect-src swt:;"
                     >
                     <title>Amazon Q Chat</title>
-                    %s
+                    <style>
+                        %s
+                        body {
+                            background-color: var(--mynah-color-bg);
+                            color: var(--mynah-color-text-default);
+                            height: 100vh;
+                            width: 100%%;
+                            overflow: hidden;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        [class*="mynah-ui-icon-"] {
+                            transform: translateZ(0);
+                        }
+                    </style>
                 </head>
                 <body>
                     %s
                 </body>
                 </html>
-                """, chatJsPath, chatJsPath, generateCss(), generateJS(chatJsPath)));
-    }
-
-    private String generateCss() {
-        return """
-                <style>
-                    body,
-                    html {
-                        background-color: var(--mynah-color-bg);
-                        color: var(--mynah-color-text-default);
-                        height: 100vh;
-                        width: 100%%;
-                        overflow: hidden;
-                        margin: 0;
-                        padding: 0;
-                    }
-
-                    [class*="mynah-ui-icon-"] {
-                        transform: translateZ(0);
-                    }
-                </style>
-                """;
+                """, chatJsPath, chatJsPath, themeVariables, generateJS(chatJsPath)));
     }
 
     private String generateJS(final String jsEntrypoint) {
