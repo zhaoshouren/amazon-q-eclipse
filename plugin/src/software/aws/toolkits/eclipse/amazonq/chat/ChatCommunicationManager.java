@@ -609,7 +609,7 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                 } catch (Exception e) {
                     Activator.getLogger().error("Error processing command from queue", e);
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(100);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         isQueueProcessorRunning = false;

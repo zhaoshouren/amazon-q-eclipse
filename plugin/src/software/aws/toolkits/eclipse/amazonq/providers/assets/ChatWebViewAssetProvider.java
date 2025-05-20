@@ -175,12 +175,15 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                 getInputFunctions());
     }
 
+    @SuppressWarnings("MethodLength")
     private String getInputFunctions() {
         return """
                 window.addEventListener('load', () => {
                     const isMacOs = () => navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
                     const cursorPositions = new WeakMap();
+                    const undoStacks = new WeakMap();
+                    const redoStacks = new WeakMap();
 
                     const getCursorPosition = (element) => {
                         const selection = window.getSelection();
@@ -210,20 +213,79 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
 
                     const addInputListener = (element) => {
                         cursorPositions.set(element, 0);
+                        undoStacks.set(element, []);
+                        redoStacks.set(element, []);
+                        let isUndoRedoAction = false;
+
+                        const saveState = () => {
+                            if (!isUndoRedoAction) {
+                                const currentState = {
+                                    text: element.innerText,
+                                    cursorPosition: getCursorPosition(element)
+                                };
+                                const undoStack = undoStacks.get(element);
+                                undoStack.push(currentState);
+                                redoStacks.set(element, []);
+                                if (undoStack.length > 100) {
+                                    undoStack.shift();
+                                }
+                            }
+                        };
+
+                        const undo = () => {
+                            const undoStack = undoStacks.get(element);
+                            const redoStack = redoStacks.get(element);
+                            if (undoStack.length > 1) {
+                                isUndoRedoAction = true;
+                                redoStack.push(undoStack.pop());
+                                const previousState = undoStack[undoStack.length - 1];
+                                element.innerText = previousState.text;
+                                updateCursorPosition(element, previousState.cursorPosition);
+                                isUndoRedoAction = false;
+                            }
+                        };
+
+                        const redo = () => {
+                            const redoStack = redoStacks.get(element);
+                            if (redoStack.length > 0) {
+                                isUndoRedoAction = true;
+                                const redoState = redoStack.pop();
+                                element.innerText = redoState.text;
+                                updateCursorPosition(element, redoState.cursorPosition);
+                                undoStacks.get(element).push(redoState);
+                                isUndoRedoAction = false;
+                            }
+                        };
 
                         const updateCursorAfterInput = () => {
                             setTimeout(() => {
                                 const newPosition = getCursorPosition(element);
                                 updateCursorPosition(element, newPosition);
+                                saveState();
                             }, 0);
                         };
+
+                        saveState();
 
                         element.addEventListener('input', updateCursorAfterInput);
                         element.addEventListener('paste', updateCursorAfterInput);
 
                         element.addEventListener('keydown', (event) => {
-                            if (((isMacOs() && event.metaKey) || (!isMacOs() && event.ctrlKey)) && event.key === 'a') {
+                            const cmdOrCtrl = isMacOs() ? event.metaKey : event.ctrlKey;
+
+                            if (cmdOrCtrl && event.key === 'a') {
                                 selectAllContent(element);
+                                event.preventDefault();
+                                event.stopPropagation();
+                                return;
+                            }
+
+                            if (cmdOrCtrl && event.key === 'z') {
+                                if (event.shiftKey) {
+                                    redo();
+                                } else {
+                                    undo();
+                                }
                                 event.preventDefault();
                                 event.stopPropagation();
                                 return;
