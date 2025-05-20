@@ -140,17 +140,20 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                     const init = () => {
                         waitForFunction('ideCommand')
                             .then(() => {
-                                function refreshIcons() {
+                                function refreshUi() {
                                     document.querySelectorAll('[class*="mynah-ui-icon-"]').forEach(icon => {
                                         icon.style.transform = 'none';
                                         void icon.offsetHeight;
                                         icon.style.transform = 'translateZ(0)';
                                     });
+                                    document.querySelectorAll('[class*="mynah-chat-wrapper"]').forEach(wrapper => {
+                                        wrapper.style.overflow = 'visible';
+                                    });
                                 }
 
                                 document.addEventListener('visibilitychange', () => {
                                     if (document.visibilityState === 'visible') {
-                                        refreshIcons();
+                                        refreshUi();
                                     }
                                 });
 
