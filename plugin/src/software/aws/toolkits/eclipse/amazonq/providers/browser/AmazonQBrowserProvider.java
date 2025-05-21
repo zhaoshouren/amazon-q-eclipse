@@ -7,6 +7,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+
 import software.aws.toolkits.eclipse.amazonq.broker.events.BrowserCompatibilityState;
 import software.aws.toolkits.eclipse.amazonq.plugin.Activator;
 import software.aws.toolkits.eclipse.amazonq.util.PluginPlatform;
