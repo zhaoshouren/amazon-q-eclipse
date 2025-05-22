@@ -33,6 +33,7 @@ public final class ChatTheme {
         themeMap.put(QChatCssVariable.TextColorWeak, rgba(205, 205, 205, 0.5));
         themeMap.put(QChatCssVariable.TextColorLink, rgb(102, 168, 245));
         themeMap.put(QChatCssVariable.TextColorInput, defaultTextColor);
+        themeMap.put(QChatCssVariable.TextColorAlternate, defaultTextColor);
 
         // Layout
         themeMap.put(QChatCssVariable.Background, rgb(47, 47, 47));
@@ -67,7 +68,7 @@ public final class ChatTheme {
 
         // Card
         themeMap.put(QChatCssVariable.CardBackground, cardBackgroundColor);
-        themeMap.put(QChatCssVariable.CardBackgroundAlternate, rgba(0, 0, 0, 0.5));
+        themeMap.put(QChatCssVariable.CardBackgroundAlternate, rgb(31, 31, 34));
 
         themeMap.put(QChatCssVariable.LineHeight, "1.25em");
 
@@ -89,6 +90,7 @@ public final class ChatTheme {
         themeMap.put(QChatCssVariable.TextColorWeak, rgba(45, 45, 45, 0.5));
         themeMap.put(QChatCssVariable.TextColorLink, rgb(59, 34, 246));
         themeMap.put(QChatCssVariable.TextColorInput, defaultTextColor);
+        themeMap.put(QChatCssVariable.TextColorAlternate, defaultTextColor);
 
         // Layout
         themeMap.put(QChatCssVariable.Background, rgb(250, 250, 250));
@@ -123,7 +125,7 @@ public final class ChatTheme {
 
         // Card
         themeMap.put(QChatCssVariable.CardBackground, cardBackgroundColor);
-        themeMap.put(QChatCssVariable.CardBackgroundAlternate, rgba(0, 0, 0, 0.5));
+        themeMap.put(QChatCssVariable.CardBackgroundAlternate, rgb(255, 255, 255));
 
         themeMap.put(QChatCssVariable.LineHeight, "1.25em");
 

@@ -11,6 +11,7 @@ public enum QChatCssVariable {
     TextColorWeak("--mynah-color-text-weak"),
     TextColorLink("--mynah-color-text-link"),
     TextColorInput("--mynah-color-text-input"),
+    TextColorAlternate("--mynah-color-text-alternate"),
 
     // Layout
     Background("--mynah-color-bg"),
