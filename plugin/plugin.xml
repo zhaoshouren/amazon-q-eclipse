@@ -567,7 +567,12 @@
                                 <equals value="org.eclipse.ui.DefaultTextEditor"/>
                                 <equals value="org.eclipse.jdt.ui.CompilationUnitEditor"/>
                                 <equals value="org.eclipse.ui.genericeditor.GenericEditor"/>
-		                        <equals value="software.aws.toolkits.eclipse.amazonq.views.AmazonQViewContainer"/>                       
+		                        <equals value="software.aws.toolkits.eclipse.amazonq.views.AmazonQViewContainer"/>
+		                        <adapt type="org.eclipse.core.resources.IFile">
+		                            <test
+		                                property="org.eclipse.core.resources.contentTypeId"
+		                                value="software.aws.toolkits.eclipse.amazonq.abap"/>
+                                </adapt>
                             </or>
                         </with>
                     </and>
