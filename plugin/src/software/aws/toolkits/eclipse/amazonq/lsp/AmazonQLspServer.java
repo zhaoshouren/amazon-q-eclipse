@@ -9,9 +9,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 import software.aws.toolkits.eclipse.amazonq.chat.models.ButtonClickResult;
-import software.aws.toolkits.eclipse.amazonq.chat.models.FileClickParams;
-import software.aws.toolkits.eclipse.amazonq.chat.models.InsertToCursorPositionParams;
-import software.aws.toolkits.eclipse.amazonq.chat.models.PromptInputOptionChangeParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.GetSsoTokenParams;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.GetSsoTokenResult;
 import software.aws.toolkits.eclipse.amazonq.lsp.auth.model.InvalidateSsoTokenParams;
@@ -57,9 +54,6 @@ public interface AmazonQLspServer extends LanguageServer {
     @JsonNotification("aws/chat/fileClick")
     void fileClick(Object params);
 
-    @JsonNotification("aws/chat/fileClick")
-    void fileClick(FileClickParams params);
-
     @JsonNotification("aws/chat/infoLinkClick")
     void infoLinkClick(Object params);
 
@@ -75,9 +69,6 @@ public interface AmazonQLspServer extends LanguageServer {
     @JsonNotification("aws/chat/promptInputOptionChange")
     void promptInputOptionChange(Object params);
 
-    @JsonNotification("aws/chat/promptInputOptionChange")
-    void promptInputOptionChange(PromptInputOptionChangeParams params);
-
     @JsonNotification("aws/chat/ready")
     void chatReady();
 
@@ -86,9 +77,6 @@ public interface AmazonQLspServer extends LanguageServer {
 
     @JsonNotification("aws/chat/insertToCursorPosition")
     void insertToCursorPosition(Object params);
-
-    @JsonNotification("aws/chat/insertToCursorPosition")
-    void insertToCursorPosition(InsertToCursorPositionParams params);
 
     @JsonRequest("aws/credentials/token/update")
     CompletableFuture<Void> updateTokenCredentials(UpdateCredentialsPayload payload);
