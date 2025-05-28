@@ -14,7 +14,7 @@ public class QChatCssVariableTest {
 
     @Test
     void testEnumValues() {
-        assertEquals(30, QChatCssVariable.values().length);
+        assertEquals(31, QChatCssVariable.values().length);
     }
 
     @Test
