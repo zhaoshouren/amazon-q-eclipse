@@ -335,24 +335,6 @@ public final class ChatWebViewAssetProvider extends WebViewAssetProvider {
                     };
 
                     document.querySelectorAll('div.mynah-chat-prompt-input').forEach(addInputListener);
-
-                    const observer = new MutationObserver((mutations) => {
-                        mutations.forEach((mutation) => {
-                            mutation.addedNodes.forEach((node) => {
-                                if (node.nodeType === 1) {
-                                    if (node.matches('div.mynah-chat-prompt-input')) {
-                                        addInputListener(node);
-                                    }
-                                    node.querySelectorAll('div.mynah-chat-prompt-input').forEach(addInputListener);
-                                }
-                            });
-                        });
-                    });
-
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true
-                    });
                 });
                 """;
     }
