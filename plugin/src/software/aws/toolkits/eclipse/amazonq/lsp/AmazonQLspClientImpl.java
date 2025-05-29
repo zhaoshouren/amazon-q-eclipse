@@ -20,7 +20,10 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.IAction;
@@ -204,33 +207,38 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
 
         return CompletableFuture.supplyAsync(() -> {
             final boolean[] success = new boolean[1];
-                if (params.getExternal() != null && params.getExternal()) {
-                    var command = new UpdateRedirectUrlCommand(uri);
-                    Activator.getEventBroker().post(UpdateRedirectUrlCommand.class, command);
-                    Display.getDefault().syncExec(() -> {
-                        try {
-                            PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(uri));
-                            success[0] = true;
-                        } catch (Exception e) {
-                            Activator.getLogger().error("Error in UI thread while opening external URI: " + uri, e);
+            if (params.getExternal() != null && params.getExternal()) {
+                var command = new UpdateRedirectUrlCommand(uri);
+                Activator.getEventBroker().post(UpdateRedirectUrlCommand.class, command);
+                Display.getDefault().syncExec(() -> {
+                    try {
+                        PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(uri));
+                        success[0] = true;
+                    } catch (Exception e) {
+                        Activator.getLogger().error("Error in UI thread while opening external URI: " + uri, e);
+                        success[0] = false;
+                    }
+                });
+                return new ShowDocumentResult(success[0]);
+            } else {
+                Display.getDefault().syncExec(() -> {
+                    try {
+                        if (!isUriInWorkspace(uri)) {
+                            Activator.getLogger().error("Attempted to open file outside workspace: " + uri);
                             success[0] = false;
-                        }
-                    });
-                    return new ShowDocumentResult(success[0]);
-                } else {
-                    Display.getDefault().syncExec(() -> {
-                        try {
+                        } else {
                             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
                             IFileStore fileStore = EFS.getLocalFileSystem().getStore(new URI(uri));
                             IDE.openEditorOnFileStore(page, fileStore);
                             success[0] = true;
-                        } catch (Exception e) {
-                            Activator.getLogger().error("Error in UI thread while opening URI: " + uri, e);
-                            success[0] = false;
                         }
-                    });
-                    return new ShowDocumentResult(success[0]);
-                }
+                    } catch (Exception e) {
+                        Activator.getLogger().error("Error in UI thread while opening URI: " + uri, e);
+                        success[0] = false;
+                    }
+                });
+                return new ShowDocumentResult(success[0]);
+            }
         });
     }
 
@@ -543,5 +551,21 @@ public class AmazonQLspClientImpl extends LanguageClientImpl implements AmazonQL
 
     private void refreshProjects() {
         WorkspaceUtils.refreshAllProjects();
+    }
+
+    private boolean isUriInWorkspace(final String uri) {
+        try {
+            IWorkspace workspace = ResourcesPlugin.getWorkspace();
+            IPath workspacePath = workspace.getRoot().getLocation();
+
+            URI fileUri = new URI(uri);
+            File file = new File(fileUri);
+            String filePath = file.getCanonicalPath();
+
+            return filePath.startsWith(workspacePath.toFile().getCanonicalPath());
+        } catch (Exception e) {
+            Activator.getLogger().error("Error validating URI location: " + uri, e);
+            return false;
+        }
     }
 }
