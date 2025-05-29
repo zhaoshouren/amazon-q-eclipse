@@ -84,7 +84,6 @@ public final class InlineChatUIManager {
             }
 
             var widget = viewer.getTextWidget();
-
             inputBox = new PopupDialog(widget.getShell(), PopupDialog.INFOPOPUP_SHELLSTYLE, false, false, true, false, false, null, null) {
                 private Point screenLocation;
                 private Text inputField;
