@@ -64,8 +64,6 @@ public class Configuration {
 
             String[] chunks = arn.split(":");
 
-            Activator.getLogger().info(chunks[4]);
-
             // The 5th chunk is the account id
             // eg: arn:aws:codewhisperer:us-west-2:012345678901:profile/ABCDEFGHIJKL
             return chunks.length < 5 ? "" : chunks[4];

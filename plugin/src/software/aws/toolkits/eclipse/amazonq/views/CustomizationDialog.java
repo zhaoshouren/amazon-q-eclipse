@@ -315,7 +315,6 @@ public final class CustomizationDialog extends Dialog {
     protected void okPressed() {
         if (this.responseSelection.equals(ResponseSelection.AMAZON_Q_FOUNDATION_DEFAULT)) {
             Activator.getPluginStore().remove(Constants.CUSTOMIZATION_STORAGE_INTERNAL_KEY);
-            ThreadingUtils.executeAsyncTask(() -> CustomizationUtil.triggerChangeConfigurationNotification());
             Display.getCurrent()
                     .asyncExec(() -> CustomizationUtil.showNotification(Constants.DEFAULT_Q_FOUNDATION_DISPLAY_NAME));
         } else if (Objects.nonNull(this.getSelectedCustomization())
@@ -329,10 +328,10 @@ public final class CustomizationDialog extends Dialog {
             }
             Activator.getPluginStore().putObject(Constants.CUSTOMIZATION_STORAGE_INTERNAL_KEY,
                     this.getSelectedCustomization());
-            ThreadingUtils.executeAsyncTask(() -> CustomizationUtil.triggerChangeConfigurationNotification());
             Display.getCurrent().asyncExec(() -> CustomizationUtil.showNotification(
                     String.format("%s customization", this.getSelectedCustomization().getName())));
         }
+        ThreadingUtils.executeAsyncTask(() -> CustomizationUtil.triggerChangeConfigurationNotification());
         super.okPressed();
     }
 
