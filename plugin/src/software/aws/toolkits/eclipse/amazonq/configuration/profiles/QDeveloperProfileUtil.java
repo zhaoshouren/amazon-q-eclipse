@@ -17,6 +17,7 @@ import org.eclipse.mylyn.commons.ui.dialogs.AbstractNotificationPopup;
 import org.eclipse.swt.widgets.Display;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import software.amazon.awssdk.utils.StringUtils;
@@ -63,11 +64,15 @@ public final class QDeveloperProfileUtil {
                     .ofNullable(Activator.getPluginStore().get(ViewConstants.Q_DEVELOPER_PROFILE_SELECTION_KEY))
                     .map(json -> {
                         try {
-                            return deserializeProfile(json);
+                            if (isValidSerializedProfile(json)) {
+                                return deserializeProfile(json);
+                            } else {
+                                Activator.getLogger().error("Cached profile has invalid format");
+                            }
                         } catch (final JsonProcessingException e) {
                             Activator.getLogger().error("Failed to process cached profile", e);
-                            return null;
                         }
+                        return null;
                     }).orElse(null);
 
         } catch (Exception e) {
@@ -77,11 +82,33 @@ public final class QDeveloperProfileUtil {
         profiles = new ArrayList<>();
     }
 
+    private boolean isValidSerializedProfile(final String profile) throws JsonProcessingException {
+        JsonNode node = OBJECT_MAPPER.readTree(profile);
+        return node.has("arn") && isValidArn(node.get("arn").asText()) && node.has("name")
+                && StringUtils.isNotBlank(node.get("name").asText()) && node.has("accountId")
+                && isValidAccountId(node.get("accountId").asText()) && node.has("region")
+                && node.get("identityDetails").has("region")
+                && isValidRegion(node.get("identityDetails").get("region").asText());
+    }
+
     private QDeveloperProfile deserializeProfile(final String json) throws JsonProcessingException {
-        return OBJECT_MAPPER.readValue(json, QDeveloperProfile.class);
+        QDeveloperProfile deserializedProfile = OBJECT_MAPPER.readValue(json, QDeveloperProfile.class);
+
+        if (!isValidProfile(deserializedProfile)) {
+            throw new JsonProcessingException("Cached profile has invalid data") {
+                private static final long serialVersionUID = 1L;
+            };
+        }
+        return deserializedProfile;
     }
 
     private String serializeProfile(final QDeveloperProfile developerProfile) throws JsonProcessingException {
+        if (!isValidProfile(developerProfile)) {
+            throw new JsonProcessingException("Developer profile has invalid data") {
+                private static final long serialVersionUID = 1L;
+            };
+        }
+
         return OBJECT_MAPPER.writeValueAsString(developerProfile);
     }
 
@@ -143,8 +170,21 @@ public final class QDeveloperProfileUtil {
     }
 
     private boolean isValidProfile(final QDeveloperProfile profile) {
-        return profile != null && StringUtils.isNotBlank(profile.getName()) && StringUtils.isNotBlank(profile.getArn())
-                && StringUtils.isNotBlank(profile.getAccountId());
+        return profile != null && StringUtils.isNotBlank(profile.getName()) && isValidAccountId(profile.getAccountId())
+                && isValidArn(profile.getArn()) && isValidRegion(profile.getRegion());
+    }
+
+    private boolean isValidAccountId(final String accountId) {
+        return accountId != null && accountId.matches("^\\d{12}$");
+    }
+
+    private boolean isValidArn(final String arn) {
+        return arn != null && arn.matches("^arn:aws:codewhisperer:[a-z]{2}-[a-z]+-\\d:\\d{12}:profile/[A-Z0-9]+$");
+    }
+
+    private boolean isValidRegion(final String region) {
+        return region != null && region
+                .matches("^[a-z]{2}-(central|north|south|east|west|northeast|southeast|northwest|southwest)-(\\d)$");
     }
 
     private List<QDeveloperProfile> handleSelectedProfile(final List<QDeveloperProfile> profiles,
