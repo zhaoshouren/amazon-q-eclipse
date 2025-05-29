@@ -161,44 +161,10 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
                     amazonQLspServer.tabChange(message.getData());
                         break;
                     case FILE_CLICK:
-                    IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-                    if (message.hasKey("fullPath")) {
-                        String fullPath = message.getValueAsString("fullPath");
-                        IPath path = new Path(fullPath);
-
-                        try {
-                            // Get all projects in workspace
-                            IProject[] projects = root.getProjects();
-                            boolean isInProjectRoot = false;
-
-                            // Log for debugging
-                            Activator.getLogger().info("Checking path: " + path.toString());
-
-                            for (IProject project : projects) {
-                                if (project.isOpen()) {
-                                    IPath projectPath = project.getLocation();
-                                    Activator.getLogger().info("Checking against project: " + projectPath.toString());
-
-                                    if (projectPath.isPrefixOf(path)) {
-                                        isInProjectRoot = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (isInProjectRoot) {
-                                amazonQLspServer.fileClick(message.getData());
-                            } else {
-                                Activator.getLogger()
-                                        .info("Path is not within any open project root: " + path.toString());
-                            }
-                        } catch (Exception e) {
-                            Activator.getLogger().error("Error checking project paths", e);
-                        }
-                    } else {
+                    if (validateFileInWorkspaceRoot(message.getValueAsString("fullPath"))) {
                         amazonQLspServer.fileClick(message.getData());
                     }
-                    break;
+                        break;
                     case CHAT_INFO_LINK_CLICK:
                     amazonQLspServer.infoLinkClick(message.getData());
                         break;
@@ -330,6 +296,37 @@ public final class ChatCommunicationManager implements EventObserver<ChatUIInbou
         });
 
         return range.get().map(CursorState::new);
+    }
+
+    private boolean validateFileInWorkspaceRoot(final String fullPath) {
+        if (fullPath == null) {
+            return true;
+        }
+
+        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+        IPath path = new Path(fullPath);
+
+        try {
+            IProject[] projects = root.getProjects();
+            boolean isInProjectRoot = false;
+
+            for (IProject project : projects) {
+                if (project.isOpen()) {
+                    IPath projectPath = project.getLocation();
+
+                    if (projectPath.isPrefixOf(path)) {
+                        isInProjectRoot = true;
+                        break;
+                    }
+                }
+            }
+
+            return isInProjectRoot;
+        } catch (Exception e) {
+            Activator.getLogger().error("Error checking project paths", e);
+        }
+
+        return false;
     }
 
     private ChatMessage addEditorState(final ChatMessage chatRequestParams, final boolean addCursorState) {
