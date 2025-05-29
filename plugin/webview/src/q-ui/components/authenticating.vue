@@ -42,7 +42,7 @@ export default defineComponent({
                 return this.$store.state.authorizationCode
             },
             set(value: string | undefined) {
-                this.$store.commit('setRedirectUrl', value)
+                this.$store.commit('setAuthorizationCode', value)
             }
         },
         redirectUrl: {
