@@ -100,12 +100,14 @@ public final class ChangeProfileDialog extends Dialog {
             profileNameAndRegionText.setBackground(topRow.getBackground());
             profileNameAndRegionText.setEditable(false);
             profileNameAndRegionText.setCaret(null);
+            profileNameAndRegionText.setCursor(getDisplay().getSystemCursor(SWT.CURSOR_HAND));
 
             accountIdFont = createFont(10, SWT.NORMAL);
             accountIdLabel = new Label(this, SWT.WRAP);
             accountIdLabel.setText("Account ID: " + accountId);
             accountIdLabel.setFont(accountIdFont);
             accountIdLabel.setForeground(getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+            accountIdLabel.setCursor(getDisplay().getSystemCursor(SWT.CURSOR_HAND));
             GridData accountIdData = new GridData(SWT.FILL, SWT.CENTER, true, false);
             accountIdData.horizontalIndent = PluginUtils.getPlatform().equals(PluginPlatform.WINDOWS) ? 21 : 23;
             accountIdLabel.setLayoutData(accountIdData);
@@ -242,7 +244,7 @@ public final class ChangeProfileDialog extends Dialog {
                 boolean isAtBottom = (scrollPosition + thumbSize) >= maxScroll;
 
                 if (isAtBottom) {
-                    scrollableLabel.setText("\u23AF"); // line
+                    scrollableLabel.setText("\u2508"); // dotted line
                 } else {
                     scrollableLabel.setText("\u2304"); // down arrow head
                 }
