@@ -202,7 +202,7 @@ public final class InlineChatSession extends FoldingListener implements ChatUiRe
                     blockUserInput(false);
                 }
             }).exceptionally(throwable -> {
-                Activator.getLogger().error("Failed to process diff: " + throwable.getMessage()); 
+                Activator.getLogger().error("Failed to process diff: " + throwable.getMessage());
                 uiManager.showErrorNotification();
                 restoreAndEndSession();
                 return null;
