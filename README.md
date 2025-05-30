@@ -68,7 +68,7 @@ Both tiers continue to receive updates and improvements.
    - Click "Finish"
    - When prompted, restart Eclipse to complete the installation
 
-![Eclipse Marketplace Demo](Install-Using-Marketplace.gif)
+![Install-Using-Marketplace](https://github.com/user-attachments/assets/dcb77afd-4ee0-4da7-adb0-dbc22cd80f70)
 
 #### Option 2: Install via Update Site
 1. **Open Install Dialog**
@@ -90,21 +90,21 @@ Both tiers continue to receive updates and improvements.
    - Click "Finish"
    - When prompted, restart Eclipse to complete the installation
 
-![Update Site Demo](Install-Using-Update-Site.gif)
+![Install-Using-Update-Site](https://github.com/user-attachments/assets/3d8e0667-a405-4daf-9736-dbcc254a3344)
 
 ### Demos & Examples
 
 #### Code Context
-![Code Context Demo](Explaining-A-Class.gif)
+![Explaining-A-Class](https://github.com/user-attachments/assets/86ff704b-8be1-41e0-be91-fc172b40478f)
 
 #### Generate Tests
-![Generating Test Demo](Test-Generation.gif)
+![Test-Generation](https://github.com/user-attachments/assets/8f3edc09-6981-4bb2-b0bd-0201e6b73cf1)
 
 #### Create Documentation
-![Documentation Capabilities Demo](Inline-Chat.gif)
+![Inline-Chat](https://github.com/user-attachments/assets/ee867bcf-ef62-4468-86d3-1df53ddabf1b)
 
 #### Code Completion
-![Code Completion Demo](Code-Completion-Example.gif)
+![Code-Completion-Example](https://github.com/user-attachments/assets/30b76708-1cd4-4cd1-9abe-22c9a4a6a8bc)
 
 ## License
 
