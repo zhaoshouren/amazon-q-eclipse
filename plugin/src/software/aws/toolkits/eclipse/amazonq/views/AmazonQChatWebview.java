@@ -76,7 +76,7 @@ public class AmazonQChatWebview extends AmazonQView implements ChatUiRequestList
 
     @Override
     public final void onSendToChatUi(final String message) {
-        String script = "window.postMessage(" + message + ", 'file:///amazonq-ui.js');";
+        String script = "window.postMessage(" + message + ");";
         Display.getDefault().asyncExec(() -> {
             browser.execute(script);
         });
