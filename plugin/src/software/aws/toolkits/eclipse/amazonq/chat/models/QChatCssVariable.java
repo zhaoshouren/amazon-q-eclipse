@@ -52,7 +52,11 @@ public enum QChatCssVariable {
     LineHeight("--mynah-line-height"),
 
     // Input
-    InputBackground("--mynah-input-bg");
+    InputBackground("--mynah-input-bg"),
+
+    // Borders
+    InputBorder("--mynah-color-text-input-border"),
+    InputBorderFocused("--mynah-color-text-input-border-focused");
 
     private String value;
 

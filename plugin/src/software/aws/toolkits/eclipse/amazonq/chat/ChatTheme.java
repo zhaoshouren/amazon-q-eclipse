@@ -37,7 +37,7 @@ public final class ChatTheme {
 
         // Layout
         themeMap.put(QChatCssVariable.Background, rgb(47, 47, 47));
-        themeMap.put(QChatCssVariable.TabActive, cardBackgroundColor);
+        themeMap.put(QChatCssVariable.TabActive, rgb(51, 51, 51));
         themeMap.put(QChatCssVariable.BorderDefault, rgb(76, 76, 76));
         themeMap.put(QChatCssVariable.ColorToggle, rgb(30, 30, 30));
 
@@ -59,7 +59,7 @@ public final class ChatTheme {
         themeMap.put(QChatCssVariable.StatusError, rgb(255, 102, 102));
 
         // Buttons
-        themeMap.put(QChatCssVariable.ButtonBackground, rgb(51, 118, 205));
+        themeMap.put(QChatCssVariable.ButtonBackground, rgb(14, 99, 156));
         themeMap.put(QChatCssVariable.ButtonForeground, rgb(255, 255, 255));
 
         // Alternates
@@ -74,6 +74,8 @@ public final class ChatTheme {
 
         // Input
         themeMap.put(QChatCssVariable.InputBackground, rgb(60, 60, 60));
+        themeMap.put(QChatCssVariable.InputBorder, rgb(76, 76, 76));
+        themeMap.put(QChatCssVariable.InputBorderFocused, rgb(14, 99, 156));
 
         return themeMap;
     }
@@ -93,8 +95,8 @@ public final class ChatTheme {
         themeMap.put(QChatCssVariable.TextColorAlternate, defaultTextColor);
 
         // Layout
-        themeMap.put(QChatCssVariable.Background, rgb(250, 250, 250));
-        themeMap.put(QChatCssVariable.TabActive, cardBackgroundColor);
+        themeMap.put(QChatCssVariable.Background, rgb(243, 243, 243));
+        themeMap.put(QChatCssVariable.TabActive, rgb(250, 250, 250));
         themeMap.put(QChatCssVariable.BorderDefault, rgb(230, 230, 230));
         themeMap.put(QChatCssVariable.ColorToggle, rgb(220, 220, 220));
 
@@ -131,6 +133,8 @@ public final class ChatTheme {
 
         // Input
         themeMap.put(QChatCssVariable.InputBackground, rgb(255, 255, 255));
+        themeMap.put(QChatCssVariable.InputBorder, rgb(230, 230, 230));
+        themeMap.put(QChatCssVariable.InputBorderFocused, rgb(51, 118, 205));
 
         return themeMap;
     }
